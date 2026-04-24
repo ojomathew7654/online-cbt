@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Receipt, Plus } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-// import { otherTransactionsApi, accountsApi } from "../../api/client";
 import { useToast } from "../../context/ToastContext";
 import {
   Button,
@@ -60,7 +59,6 @@ export default function OtherTransactionsPage() {
   const [typeFilter, setTypeFilter] = useState("ALL");
   const [form, setForm] = useState(emptyForm);
 
-  // Cash/asset accounts for the cash side
   const cashAccounts = accounts
     .filter((a) => a.accountType === "ASSET" && a.isActive)
     .map((a) => ({ value: a.id, label: `${a.code} — ${a.name}` }));

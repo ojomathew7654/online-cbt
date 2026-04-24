@@ -192,6 +192,7 @@ export const otherTransactionsApi = {
       params: sessionId ? { sessionId } : {},
     }),
 };
+
 // ─── Audit ────────────────────────────────────────────────────────────────
 export const auditApi = {
   getByEntity: (entity: string, entityId: string) =>
