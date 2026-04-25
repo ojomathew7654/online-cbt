@@ -27,7 +27,6 @@ import {
   EmptyState,
   SearchInput,
   StatCard,
-  Tabs,
 } from "../../components";
 import { fmt, getErrorMessage } from "../../utils/helpers";
 

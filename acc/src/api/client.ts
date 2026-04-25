@@ -102,6 +102,11 @@ export const studentFeesApi = {
     schoolId: string;
   }) => api.post("/fees/student-fees/bulk-assign", data),
 
+  // ─── Get all fees for a specific student ───────
+  getForStudent: (studentId: string, sessionId?: string) =>
+    api.get(`/fees/student-fees/student/${studentId}`, {
+      params: sessionId ? { sessionId } : {},
+    }),
   // ─── Get all fees for a student ────────────
   getAllFees: (
     schoolId: string,

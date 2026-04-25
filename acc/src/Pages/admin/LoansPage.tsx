@@ -25,9 +25,8 @@ import {
   Tr,
   EmptyState,
   StatCard,
-  ConfirmDialog,
 } from "../../components";
-import { fmt, loanStatusColor, getErrorMessage } from "../../utils/helpers";
+import { fmt, getErrorMessage } from "../../utils/helpers";
 
 export default function LoansPage() {
   const { accountingAuth } = useApp();
