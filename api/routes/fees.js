@@ -343,13 +343,13 @@ feesRoute.get(
   "/student-fees/outstanding/:schoolId",
   expressAsyncHandler(async (req, res) => {
     const { schoolId } = req.params;
-    const { sessionId } = req.query;
-
+    const { sessionId, level } = req.query;
     const fees = await prisma.studentFee.findMany({
       where: {
         schoolId,
         status: { in: ["UNPAID", "PARTIALLY_PAID"] },
         ...(sessionId ? { sessionId } : {}),
+        ...(level ? { Student: { level: level } } : {}),
       },
       include: {
         Student: {
@@ -585,6 +585,108 @@ feesRoute.get(
     res.json(students);
   }),
 );
+
+// ─── Get All Student Fees (Full Ledger) ──────────────────────────────────
+// GET /fees/student-fees/school/:schoolId
+
+feesRoute.get(
+  "/student-fees/school/:schoolId",
+  expressAsyncHandler(async (req, res) => {
+    const { schoolId } = req.params;
+    const { sessionId, level, status, search } = req.query;
+
+    const fees = await prisma.studentFee.findMany({
+      where: {
+        schoolId,
+
+        ...(sessionId ? { sessionId: String(sessionId) } : {}),
+
+        ...(status
+          ? { status: String(status) } // UNPAID | PARTIALLY_PAID | PAID
+          : {}),
+
+        // ✅ Merge Student filters properly
+        ...(level || search
+          ? {
+              Student: {
+                ...(level ? { level: String(level) } : {}),
+
+                ...(search
+                  ? {
+                      OR: [
+                        {
+                          name: {
+                            contains: String(search),
+                            mode: "insensitive",
+                          },
+                        },
+                        {
+                          surname: {
+                            contains: String(search),
+                            mode: "insensitive",
+                          },
+                        },
+                      ],
+                    }
+                  : {}),
+              },
+            }
+          : {}),
+      },
+
+      include: {
+        Student: {
+          select: {
+            id: true,
+            name: true,
+            surname: true,
+            level: true,
+            username: true,
+          },
+        },
+        FeeStructure: {
+          select: {
+            id: true,
+            name: true,
+            amount: true,
+          },
+        },
+        Session: {
+          select: {
+            id: true,
+            name: true,
+            term: true,
+          },
+        },
+        payments: true,
+      },
+
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    // ✅ Add computed balance
+    const result = fees.map((f) => ({
+      ...f,
+      balance: f.amountCharged - f.amountPaid,
+    }));
+
+    // ✅ Summary
+    const summary = {
+      totalFees: result.length,
+      totalCharged: result.reduce((s, f) => s + f.amountCharged, 0),
+      totalPaid: result.reduce((s, f) => s + f.amountPaid, 0),
+      totalOutstanding: result.reduce((s, f) => s + f.balance, 0),
+    };
+
+    res.json({
+      fees: result,
+      summary,
+    });
+  }),
+);
+
 // PUT /fees/students/:id
 feesRoute.put(
   "/students/:id",

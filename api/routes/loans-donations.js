@@ -57,6 +57,7 @@ loanDonationRoute.post(
       prisma.loan.create({
         data: {
           amount,
+          amountRepaid: 0, // ← track repayments
           lender,
           description,
           dateReceived: new Date(dateReceived),
@@ -119,13 +120,24 @@ loanDonationRoute.post(
   }),
 );
 
-// ─── Mark Loan as Paid ────────────────────────────────────────────────────
-loanDonationRoute.put(
-  "/loans/:id/mark-paid",
+// ─── Repay Loan (Partial or Full) ─────────────────────────────────────────
+// Supports multiple partial repayments. Auto-marks PAID when balance hits 0.
+// ACCOUNTING RULE (each repayment):
+//   Debit:  Loan Liability account  (reduces the debt)
+//   Credit: Cash account            (cash leaves the school)
+loanDonationRoute.post(
+  "/loans/:id/repay",
   protect,
   expressAsyncHandler(async (req, res) => {
     const { id } = req.params;
+    const { amount, note } = req.body;
     const userId = req.user.id;
+
+    if (!amount || isNaN(amount) || Number(amount) <= 0) {
+      return res
+        .status(400)
+        .json({ message: "A valid repayment amount is required." });
+    }
 
     const loan = await prisma.loan.findUnique({ where: { id } });
 
@@ -134,20 +146,36 @@ loanDonationRoute.put(
     }
 
     if (loan.status === "PAID") {
-      return res.status(400).json({ message: "Already paid." });
+      return res
+        .status(400)
+        .json({ message: "This loan is already fully paid." });
     }
 
     await assertSessionNotLocked(loan.sessionId);
 
+    const balance = loan.amount - loan.amountRepaid;
+    const repayAmount = Number(amount);
+
+    // ── Overpayment guard ─────────────────────────────────────────────────
+    if (repayAmount > balance) {
+      return res.status(400).json({
+        message: `Repayment amount (${repayAmount}) exceeds remaining balance (${balance}). Maximum allowed is ${balance}.`,
+      });
+    }
+
+    const newAmountRepaid = loan.amountRepaid + repayAmount;
+    const newBalance = loan.amount - newAmountRepaid;
+    const isFullyPaid = newBalance === 0;
+
     const entryNumber = await generateEntryNumber(loan.schoolId);
 
     const result = await prisma.$transaction(async (tx) => {
-      // 🔥 1. Create repayment journal entry
-      const repaymentEntry = await tx.journalEntry.create({
+      // 1. Create repayment journal entry
+      const journalEntry = await tx.journalEntry.create({
         data: {
           entryNumber,
           date: new Date(),
-          description: `Loan repayment to ${loan.lender}`,
+          description: `Loan repayment to ${loan.lender}${note ? ` — ${note}` : ""}`,
           source: "LOAN_REPAYMENT",
           status: "POSTED",
           postedAt: new Date(),
@@ -158,14 +186,14 @@ loanDonationRoute.put(
             create: [
               {
                 accountId: loan.liabilityAccountId,
-                entryType: "DEBIT", // 🔥 reduces liability
-                amount: loan.amount,
-                narration: `Loan cleared — ${loan.lender}`,
+                entryType: "DEBIT", // reduces liability
+                amount: repayAmount,
+                narration: `Loan repayment — ${loan.lender}${note ? ` (${note})` : ""}`,
               },
               {
                 accountId: loan.cashAccountId,
-                entryType: "CREDIT", // 🔥 cash leaves
-                amount: loan.amount,
+                entryType: "CREDIT", // cash leaves
+                amount: repayAmount,
                 narration: `Cash paid for loan — ${loan.lender}`,
               },
             ],
@@ -173,31 +201,72 @@ loanDonationRoute.put(
         },
       });
 
-      // 🔥 2. Update loan
-      const updatedLoan = await tx.loan.update({
-        where: { id },
+      // 2. Create repayment record
+      const repayment = await tx.loanRepayment.create({
         data: {
-          status: "PAID",
-          repaymentJournalEntryId: repaymentEntry.id, // 👈 IMPORTANT
+          loanId: id,
+          amount: repayAmount,
+          note: note || null,
+          journalEntryId: journalEntry.id,
+          paidById: userId,
+          schoolId: loan.schoolId,
         },
       });
 
-      return { repaymentEntry, updatedLoan };
+      // 3. Update loan — reduce amountRepaid, auto-set PAID if balance reaches 0
+      const updatedLoan = await tx.loan.update({
+        where: { id },
+        data: {
+          amountRepaid: newAmountRepaid,
+          status: isFullyPaid ? "PAID" : "ACTIVE",
+          ...(isFullyPaid ? { repaymentJournalEntryId: journalEntry.id } : {}),
+        },
+      });
+
+      return { journalEntry, repayment, updatedLoan };
     });
 
     await createAuditLog({
-      action: "LOAN_REPAID",
+      action: "LOAN_REPAYMENT",
       entity: "Loan",
       entityId: id,
       userId,
       schoolId: loan.schoolId,
-      newData: { amount: loan.amount },
+      newData: {
+        repaymentAmount: repayAmount,
+        newBalance,
+        fullyPaid: isFullyPaid,
+      },
     });
 
-    res.json({
-      message: "Loan repaid successfully.",
+    res.status(201).json({
+      message: isFullyPaid
+        ? "Loan fully repaid and marked as PAID."
+        : `Repayment of ${repayAmount} recorded. Remaining balance: ${newBalance}.`,
+      repayment: result.repayment,
       loan: result.updatedLoan,
+      newBalance,
+      isFullyPaid,
     });
+  }),
+);
+
+// ─── Get Repayments for a Loan ────────────────────────────────────────────
+loanDonationRoute.get(
+  "/loans/:id/repayments",
+  protect,
+  expressAsyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    const repayments = await prisma.loanRepayment.findMany({
+      where: { loanId: id },
+      include: {
+        paidBy: { select: { name: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    res.json(repayments);
   }),
 );
 
@@ -217,6 +286,10 @@ loanDonationRoute.get(
       include: {
         LiabilityAccount: { select: { name: true, code: true } },
         CashAccount: { select: { name: true, code: true } },
+        repayments: {
+          orderBy: { createdAt: "desc" },
+          include: { paidBy: { select: { name: true } } },
+        },
       },
       orderBy: { dateReceived: "desc" },
     });

@@ -44,20 +44,23 @@ const tabList = [
   { value: "outstanding", label: "Outstanding" },
 ];
 
+type GroupedItem = {
+  student: any;
+  fees: any[];
+  totalBalance: number;
+};
+
 const emptyFeeForm = {
   name: "",
   description: "",
   level: "",
-  isAllLevels: false, // ← add this
+  isAllLevels: false,
   amount: "",
   dueDate: "",
   revenueAccountId: "",
 };
-const LEVEL_OPTIONS = ["js1", "js2", "js3", "ss1", "ss2", "ss3"].map((l) => ({
-  value: l,
-  label: l.toUpperCase(),
-}));
-// ─── Student Search Dropdown ───────────────────────────────────────────────
+
+// ─── Student Search Input ────────────────────────────────────────────────────
 function StudentSearchInput({
   schoolId,
   onSelect,
@@ -204,32 +207,56 @@ function StudentSearchInput({
   );
 }
 
-// ─── Main Page ─────────────────────────────────────────────────────────────
+// ─── Main Page ───────────────────────────────────────────────────────────────
 export default function FeesPage() {
   const { accountingAuth } = useApp();
-  const { schoolId, currentSessionId } = accountingAuth;
+  const { schoolId, currentSessionId, classes } = accountingAuth;
   const toast = useToast();
+
   const [tab, setTab] = useState("structures");
+
+  // ── Data ──────────────────────────────────────────────────────────────────
   const [structures, setStructures] = useState<any[]>([]);
   const [outstanding, setOutstanding] = useState<any[]>([]);
   const [accounts, setAccounts] = useState<any[]>([]);
+  const [studentFees, setStudentFees] = useState<any[]>([]);
+
+  // ── Loading ───────────────────────────────────────────────────────────────
   const [loading, setLoading] = useState(true);
+
+  // ── Filters ───────────────────────────────────────────────────────────────
+  const [selectedSessionId, setSelectedSessionId] = useState(
+    currentSessionId || "",
+  );
+  const [selectedLevel, setSelectedLevel] = useState("");
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  // ── Modals ────────────────────────────────────────────────────────────────
   const [modal, setModal] = useState<
     "createStructure" | "editStructure" | "assign" | "bulkAssign" | null
   >(null);
   const [selectedStructure, setSelectedStructure] = useState<any>(null);
   const [saving, setSaving] = useState(false);
   const [feeForm, setFeeForm] = useState(emptyFeeForm);
-  const [search, setSearch] = useState("");
 
-  // Assign modal: selected student
+  // ── Assign modal ──────────────────────────────────────────────────────────
   const [assignStudent, setAssignStudent] = useState<any | null>(null);
   const [assignFeeStructureId, setAssignFeeStructureId] = useState("");
   const [bulkFeeStructureId, setBulkFeeStructureId] = useState("");
+
+  // ── Outstanding meta ──────────────────────────────────────────────────────
   const [outstandingMeta, setOutstandingMeta] = useState({
     totalOutstanding: 0,
     count: 0,
   });
+
+  // ── Outstanding expand ────────────────────────────────────────────────────
+  const [expandedStudents, setExpandedStudents] = useState<Set<string>>(
+    new Set(),
+  );
+
+  // ── Derived ───────────────────────────────────────────────────────────────
   const revenueAccounts = accounts
     .filter((a) => a.accountType === "REVENUE" && a.isActive)
     .map((a) => ({ value: a.id, label: `${a.code} — ${a.name}` }));
@@ -239,10 +266,6 @@ export default function FeesPage() {
     label: `${s.name} (${s.level}) — ${fmt.currency(s.amount)}`,
   }));
 
-  const [selectedSessionId, setSelectedSessionId] = useState(
-    currentSessionId || "",
-  );
-
   const SESSION_OPTIONS = [
     { value: "", label: "All Sessions" },
     ...(accountingAuth.sessions ?? []).map((s) => ({
@@ -251,48 +274,36 @@ export default function FeesPage() {
     })),
   ];
 
-  const handleEditStructure = async () => {
-    if (!feeForm.name || !feeForm.amount) {
-      toast.error("Name and amount are required.");
-      return;
-    }
-    setSaving(true);
-    try {
-      await feeStructuresApi.update(selectedStructure.id, {
-        name: feeForm.name,
-        description: feeForm.description,
-        amount: parseFloat(feeForm.amount),
-        dueDate: feeForm.dueDate || null,
-      });
-      toast.success("Fee structure updated.");
-      setModal(null);
-      setSelectedStructure(null);
-      load();
-    } catch (e) {
-      toast.error(getErrorMessage(e));
-    } finally {
-      setSaving(false);
-    }
-  };
-  useEffect(() => {
-    load();
-  }, [schoolId, currentSessionId, selectedSessionId]); // 🆕
+  const LEVEL_OPTIONS = (classes ?? []).map((c) => ({
+    value: c,
+    label: c.toUpperCase(),
+  }));
 
-  const load = async () => {
+  // ── Default level once classes load ───────────────────────────────────────
+  useEffect(() => {
+    if (!selectedLevel && classes?.length) {
+      setSelectedLevel(classes[0]);
+    }
+  }, [classes]);
+
+  // ── Debounce search ───────────────────────────────────────────────────────
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  // ── Loaders ───────────────────────────────────────────────────────────────
+
+  /** Load static data that doesn't change with level/session filters */
+  const loadStructuresAndAccounts = async () => {
     if (!schoolId) return;
     setLoading(true);
     try {
-      const [sRes, oRes, aRes] = await Promise.all([
+      const [sRes, aRes] = await Promise.all([
         feeStructuresApi.getAll(schoolId, currentSessionId || undefined),
-        studentFeesApi.getOutstanding(schoolId, selectedSessionId || undefined), // 🆕
         accountsApi.getAll(schoolId),
       ]);
       setStructures(sRes.data);
-      setOutstanding(oRes.data.fees ?? []);
-      setOutstandingMeta({
-        totalOutstanding: oRes.data.totalOutstanding ?? 0,
-        count: oRes.data.count ?? 0,
-      });
       setAccounts(aRes.data);
     } catch (e) {
       toast.error(getErrorMessage(e));
@@ -300,9 +311,63 @@ export default function FeesPage() {
       setLoading(false);
     }
   };
+
+  /** Load outstanding fees — re-runs on level/session change */
+  const loadOutstanding = async () => {
+    if (!schoolId) return;
+    try {
+      const oRes = await studentFeesApi.getOutstanding(
+        schoolId,
+        selectedSessionId || undefined,
+        selectedLevel,
+      );
+      setOutstanding(oRes.data.fees ?? []);
+      setOutstandingMeta({
+        totalOutstanding: oRes.data.totalOutstanding ?? 0,
+        count: oRes.data.count ?? 0,
+      });
+    } catch (e) {
+      toast.error(getErrorMessage(e));
+    }
+  };
+
+  /** Load student fees list — filtered by level, session, search */
+  const loadStudentFees = async () => {
+    if (!schoolId) return;
+    setLoading(true);
+    try {
+      const { data } = await studentFeesApi.getAllFees(schoolId, {
+        sessionId: selectedSessionId,
+        level: selectedLevel,
+        search: debouncedSearch,
+      });
+      setStudentFees(data.fees);
+    } catch (e) {
+      toast.error(getErrorMessage(e));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ── Effects ───────────────────────────────────────────────────────────────
+
   useEffect(() => {
-    load();
+    loadStructuresAndAccounts();
   }, [schoolId, currentSessionId]);
+
+  useEffect(() => {
+    if (!schoolId) return;
+    loadOutstanding();
+  }, [schoolId, selectedSessionId, selectedLevel]);
+
+  useEffect(() => {
+    if (tab === "student-fees") {
+      loadStudentFees();
+    }
+  }, [tab, selectedSessionId, selectedLevel, debouncedSearch]);
+
+  // ── Handlers ──────────────────────────────────────────────────────────────
+
   const handleCreateStructure = async () => {
     if (!feeForm.name || !feeForm.amount || !feeForm.revenueAccountId) {
       toast.error("All required fields must be filled.");
@@ -323,11 +388,45 @@ export default function FeesPage() {
       toast.success("Fee structure created.");
       setModal(null);
       setFeeForm(emptyFeeForm);
-      load();
+      loadStructuresAndAccounts();
     } catch (e) {
       toast.error(getErrorMessage(e));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleEditStructure = async () => {
+    if (!feeForm.name || !feeForm.amount) {
+      toast.error("Name and amount are required.");
+      return;
+    }
+    setSaving(true);
+    try {
+      await feeStructuresApi.update(selectedStructure.id, {
+        name: feeForm.name,
+        description: feeForm.description,
+        amount: parseFloat(feeForm.amount),
+        dueDate: feeForm.dueDate || null,
+      });
+      toast.success("Fee structure updated.");
+      setModal(null);
+      setSelectedStructure(null);
+      loadStructuresAndAccounts();
+    } catch (e) {
+      toast.error(getErrorMessage(e));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleToggleStructure = async (id: string) => {
+    try {
+      const res = await feeStructuresApi.toggleStatus(id);
+      toast.success(res.data.message);
+      loadStructuresAndAccounts();
+    } catch (e) {
+      toast.error(getErrorMessage(e));
     }
   };
 
@@ -348,7 +447,8 @@ export default function FeesPage() {
       setModal(null);
       setAssignStudent(null);
       setAssignFeeStructureId("");
-      load();
+      loadStudentFees();
+      loadOutstanding();
     } catch (e) {
       toast.error(getErrorMessage(e));
     } finally {
@@ -371,7 +471,8 @@ export default function FeesPage() {
       toast.success(res.data.message);
       setModal(null);
       setBulkFeeStructureId("");
-      load();
+      loadStudentFees();
+      loadOutstanding();
     } catch (e) {
       toast.error(getErrorMessage(e));
     } finally {
@@ -379,26 +480,63 @@ export default function FeesPage() {
     }
   };
 
-  const handleToggleStructure = async (id: string) => {
-    try {
-      const res = await feeStructuresApi.toggleStatus(id);
-      toast.success(res.data.message);
-      load();
-    } catch (e) {
-      toast.error(getErrorMessage(e));
-    }
+  const toggleExpand = (id: string) => {
+    setExpandedStudents((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
   };
 
-  const filteredOutstanding = outstanding.filter(
-    (f) =>
-      !search ||
-      `${f.Student?.name} ${f.Student?.surname}`
-        .toLowerCase()
-        .includes(search.toLowerCase()),
+  // Outstanding is already filtered by the backend; group for display
+  const grouped: Record<string, GroupedItem> = outstanding.reduce(
+    (acc, f) => {
+      const id = f.Student?.id;
+      if (!acc[id]) {
+        acc[id] = {
+          student: f.Student,
+          fees: [],
+          totalBalance: 0,
+        };
+      }
+      acc[id].fees.push(f);
+      acc[id].totalBalance += f.amountCharged - f.amountPaid;
+      return acc;
+    },
+    {} as Record<string, GroupedItem>,
   );
-  console.log("first");
-  console.log(outstanding);
+  // ── Shared filter bar ─────────────────────────────────────────────────────
+  const FilterBar = () => (
+    <div className="flex flex-col sm:flex-row gap-3 mb-3 sm:mb-4">
+      <div className="w-full sm:w-44">
+        <Select
+          label=""
+          options={LEVEL_OPTIONS}
+          value={selectedLevel}
+          onChange={(e) => setSelectedLevel(e.target.value)}
+          placeholder="Filter by level..."
+        />
+      </div>
+      <div className="w-full sm:w-64">
+        <Select
+          label=""
+          options={SESSION_OPTIONS}
+          value={selectedSessionId}
+          onChange={(e) => setSelectedSessionId(e.target.value)}
+          placeholder="Filter by session..."
+        />
+      </div>
+      <div className="flex-1">
+        <SearchInput
+          value={search}
+          onChange={setSearch}
+          placeholder="Search students..."
+        />
+      </div>
+    </div>
+  );
 
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="p-4 sm:p-6 animate-fade-in">
       <PageHeader
@@ -445,18 +583,25 @@ export default function FeesPage() {
       />
 
       {/* Summary stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
         <StatCard
-          label="Fee Structures"
+          label="Active Structures"
           value={structures.filter((s) => s.isActive).length}
           icon={<GraduationCap size={18} />}
           sub={`${structures.length} total`}
         />
         <StatCard
-          label="Outstanding Fees"
-          value={outstanding.length}
-          icon={<AlertCircle size={18} />}
-          sub="Students with balance"
+          label="Students with Debt"
+          value={outstandingMeta.count}
+          icon={<Users size={18} />}
+          sub="Outstanding balances"
+        />
+        <StatCard
+          label="Total Collected"
+          value={fmt.currency(
+            studentFees.reduce((sum, f) => sum + f.amountPaid, 0),
+          )}
+          icon={<GraduationCap size={18} />}
         />
         <StatCard
           label="Total Outstanding"
@@ -469,7 +614,7 @@ export default function FeesPage() {
       <Tabs tabs={tabList} active={tab} onChange={setTab} />
       <div className="mt-3 sm:mt-4" />
 
-      {/* Fee Structures Tab */}
+      {/* ── Fee Structures Tab ─────────────────────────────────────────────── */}
       {tab === "structures" && (
         <Card padding={false}>
           {loading ? (
@@ -528,7 +673,6 @@ export default function FeesPage() {
                     <Td className="text-light hidden lg:table-cell">
                       {s.RevenueAccount?.name || "—"}
                     </Td>
-
                     <Td>
                       <StatusToggle
                         active={s.isActive}
@@ -536,7 +680,6 @@ export default function FeesPage() {
                         label={s.isActive ? "Active" : "Inactive"}
                       />
                     </Td>
-
                     <Td>
                       <Button
                         variant="ghost"
@@ -566,31 +709,221 @@ export default function FeesPage() {
         </Card>
       )}
 
-      {/* Outstanding Tab */}
-      {tab === "outstanding" && (
+      {/* ── Student Fees Tab ───────────────────────────────────────────────── */}
+      {tab === "student-fees" && (
         <>
-          <div className="flex flex-col sm:flex-row gap-3 mb-3 sm:mb-4">
-            <div className="w-full sm:w-64">
-              <Select
-                label=""
-                options={SESSION_OPTIONS}
-                value={selectedSessionId}
-                onChange={(e) => setSelectedSessionId(e.target.value)}
-                placeholder="Filter by session..."
-              />
-            </div>
-            <div className="flex-1">
-              <SearchInput
-                value={search}
-                onChange={setSearch}
-                placeholder="Search students..."
-              />
-            </div>
-          </div>
+          <FilterBar />
           <Card padding={false}>
             {loading ? (
               <Loader />
-            ) : filteredOutstanding.length === 0 ? (
+            ) : studentFees.length === 0 ? (
+              <EmptyState
+                icon={<AlertCircle size={40} />}
+                title="No fees found"
+              />
+            ) : (
+              (() => {
+                // Group by student
+                const groupedFees = studentFees.reduce(
+                  (acc, f) => {
+                    const id = f.Student?.id;
+                    if (!acc[id]) {
+                      acc[id] = {
+                        student: f.Student,
+                        fees: [] as any[],
+                        totalCharged: 0,
+                        totalPaid: 0,
+                        totalBalance: 0,
+                      };
+                    }
+                    acc[id].fees.push(f);
+                    acc[id].totalCharged += f.amountCharged;
+                    acc[id].totalPaid += f.amountPaid;
+                    acc[id].totalBalance += f.amountCharged - f.amountPaid;
+                    return acc;
+                  },
+                  {} as Record<
+                    string,
+                    {
+                      student: any;
+                      fees: any[];
+                      totalCharged: number;
+                      totalPaid: number;
+                      totalBalance: number;
+                    }
+                  >,
+                );
+
+                return (
+                  <Table>
+                    <thead>
+                      <tr>
+                        <Th>Student</Th>
+                        <Th className="hidden sm:table-cell">Level</Th>
+                        <Th className="hidden md:table-cell">Fees</Th>
+                        <Th className="hidden lg:table-cell">Charged</Th>
+                        <Th className="hidden lg:table-cell">Paid</Th>
+                        <Th>Balance</Th>
+                        <Th>Status</Th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(
+                        Object.values(groupedFees) as {
+                          student: any;
+                          fees: any[];
+                          totalCharged: number;
+                          totalPaid: number;
+                          totalBalance: number;
+                        }[]
+                      ).map(
+                        ({
+                          student,
+                          fees,
+                          totalCharged,
+                          totalPaid,
+                          totalBalance,
+                        }) => {
+                          const isExpanded = expandedStudents.has(student.id);
+
+                          return (
+                            <>
+                              {/* ── Student summary row ── */}
+                              <Tr
+                                key={student.id}
+                                clickable
+                                onClick={() => toggleExpand(student.id)}
+                              >
+                                <Td>
+                                  <p className="m-0 font-medium text-white text-[13px]">
+                                    {student.name} {student.surname}
+                                  </p>
+                                  <p className="m-0 text-[11px] text-light sm:hidden">
+                                    {student.level} · {fees.length} fee
+                                    {fees.length > 1 ? "s" : ""}
+                                  </p>
+                                </Td>
+                                <Td className="hidden sm:table-cell">
+                                  <Badge variant="info">{student.level}</Badge>
+                                </Td>
+                                <Td className="text-light hidden md:table-cell text-[12px]">
+                                  {fees.length} fee{fees.length > 1 ? "s" : ""}
+                                </Td>
+                                <Td className="font-medium hidden lg:table-cell whitespace-nowrap">
+                                  {fmt.currency(totalCharged)}
+                                </Td>
+                                <Td className="text-success hidden lg:table-cell whitespace-nowrap">
+                                  {fmt.currency(totalPaid)}
+                                </Td>
+                                <Td
+                                  className={`font-semibold whitespace-nowrap ${totalBalance > 0 ? "text-danger" : "text-success"}`}
+                                >
+                                  {fmt.currency(totalBalance)}
+                                </Td>
+                                <Td>
+                                  <span className="text-light text-[11px]">
+                                    {isExpanded ? "▲ hide" : "▼ show"}
+                                  </span>
+                                </Td>
+                              </Tr>
+
+                              {/* ── Expanded fee rows ── */}
+                              {isExpanded &&
+                                fees.map((f) => {
+                                  const balance =
+                                    f.amountCharged - f.amountPaid;
+                                  return (
+                                    <Tr key={f.id}>
+                                      <Td>
+                                        <p className="m-0 text-[12px] text-light pl-3 border-l-2 border-primary/40">
+                                          {f.FeeStructure?.name}
+                                        </p>
+                                        <p className="m-0 text-[11px] text-light/60 pl-3 md:hidden">
+                                          {f.Session?.name} · {f.Session?.term}
+                                        </p>
+                                      </Td>
+                                      <Td className="hidden sm:table-cell" />
+                                      <Td className="text-light hidden md:table-cell text-[12px]">
+                                        {f.Session?.name} · {f.Session?.term}
+                                      </Td>
+                                      <Td className="font-medium hidden lg:table-cell whitespace-nowrap text-[12px]">
+                                        {fmt.currency(f.amountCharged)}
+                                      </Td>
+                                      <Td className="text-success font-medium hidden lg:table-cell whitespace-nowrap text-[12px]">
+                                        {fmt.currency(f.amountPaid)}
+                                      </Td>
+                                      <Td
+                                        className={`font-semibold whitespace-nowrap text-[12px] ${balance > 0 ? "text-danger" : "text-success"}`}
+                                      >
+                                        {fmt.currency(balance)}
+                                      </Td>
+                                      <Td>
+                                        <div className="flex items-center gap-2">
+                                          <Badge
+                                            variant={
+                                              f.status === "PAID"
+                                                ? "success"
+                                                : f.status === "PARTIALLY_PAID"
+                                                  ? "warning"
+                                                  : "danger"
+                                            }
+                                            dot
+                                          >
+                                            {f.status.replace("_", " ")}
+                                          </Badge>
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            disabled={f.amountPaid > 0}
+                                            onClick={async (e) => {
+                                              e.stopPropagation();
+                                              if (
+                                                !confirm(
+                                                  "Remove this fee assignment from student?",
+                                                )
+                                              )
+                                                return;
+                                              try {
+                                                await studentFeesApi.remove(
+                                                  f.id,
+                                                );
+                                                toast.success("Fee removed");
+                                                loadStudentFees();
+                                              } catch (err) {
+                                                toast.error(
+                                                  getErrorMessage(err),
+                                                );
+                                              }
+                                            }}
+                                          >
+                                            Remove
+                                          </Button>
+                                        </div>
+                                      </Td>
+                                    </Tr>
+                                  );
+                                })}
+                            </>
+                          );
+                        },
+                      )}
+                    </tbody>
+                  </Table>
+                );
+              })()
+            )}
+          </Card>
+        </>
+      )}
+
+      {/* ── Outstanding Tab ────────────────────────────────────────────────── */}
+      {tab === "outstanding" && (
+        <>
+          <FilterBar />
+          <Card padding={false}>
+            {loading ? (
+              <Loader />
+            ) : outstanding.length === 0 ? (
               <EmptyState
                 icon={<AlertCircle size={40} />}
                 title="No outstanding fees"
@@ -603,7 +936,6 @@ export default function FeesPage() {
                     <Th className="hidden sm:table-cell">Level</Th>
                     <Th className="hidden md:table-cell">Fee</Th>
                     <Th className="hidden md:table-cell">Term</Th>
-
                     <Th className="hidden lg:table-cell">Charged</Th>
                     <Th className="hidden lg:table-cell">Paid</Th>
                     <Th>Balance</Th>
@@ -611,44 +943,82 @@ export default function FeesPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredOutstanding.map((f) => {
-                    const balance = f.amountCharged - f.amountPaid;
-                    return (
-                      <Tr key={f.id}>
-                        <Td>
-                          <p className="m-0 font-medium text-white text-[13px]">
-                            {f.Student?.name} {f.Student?.surname}
-                          </p>
-                          <p className="m-0 text-[11px] text-light sm:hidden">
-                            {f.Student?.level} · {f.FeeStructure?.name}
-                          </p>
-                        </Td>
-                        <Td className="hidden sm:table-cell">
-                          <Badge variant="info">{f.Student?.level}</Badge>
-                        </Td>
-                        <Td className="text-light hidden md:table-cell">
-                          {f.FeeStructure?.name}
-                        </Td>
-                        <Td className="text-light hidden md:table-cell">
-                          {f.Session?.name} · {f.Session?.term}
-                        </Td>
-                        <Td className="font-medium hidden lg:table-cell whitespace-nowrap">
-                          {fmt.currency(f.amountCharged)}
-                        </Td>
-                        <Td className="text-success font-medium hidden lg:table-cell whitespace-nowrap">
-                          {fmt.currency(f.amountPaid)}
-                        </Td>
-                        <Td className="text-danger font-semibold whitespace-nowrap">
-                          {fmt.currency(balance)}
-                        </Td>
-                        <Td>
-                          <Badge variant={"danger"} dot>
-                            {f.status.replace("_", " ")}
-                          </Badge>
-                        </Td>
-                      </Tr>
-                    );
-                  })}
+                  {Object.values(grouped).map(
+                    ({ student, fees, totalBalance }) => {
+                      const isExpanded = expandedStudents.has(student.id);
+                      return (
+                        <>
+                          <Tr
+                            key={student.id}
+                            clickable
+                            onClick={() => toggleExpand(student.id)}
+                          >
+                            <Td>
+                              <p className="m-0 font-medium text-white text-[13px]">
+                                {student.name} {student.surname}
+                              </p>
+                              <p className="m-0 text-[11px] text-light sm:hidden">
+                                {student.level} · {fees.length} fee
+                                {fees.length > 1 ? "s" : ""}
+                              </p>
+                            </Td>
+                            <Td className="hidden sm:table-cell">
+                              <Badge variant="info">{student.level}</Badge>
+                            </Td>
+                            <Td className="text-light hidden md:table-cell text-[12px]">
+                              {fees.length} fee{fees.length > 1 ? "s" : ""}
+                            </Td>
+                            <Td className="hidden md:table-cell" />
+                            <Td className="hidden lg:table-cell" />
+                            <Td className="hidden lg:table-cell" />
+                            <Td className="text-danger font-semibold whitespace-nowrap">
+                              {fmt.currency(totalBalance)}
+                            </Td>
+                            <Td>
+                              <span className="text-light text-[11px]">
+                                {isExpanded ? "▲ hide" : "▼ show"}
+                              </span>
+                            </Td>
+                          </Tr>
+
+                          {isExpanded &&
+                            fees.map((f) => {
+                              const balance = f.amountCharged - f.amountPaid;
+                              return (
+                                <Tr key={f.id}>
+                                  <Td>
+                                    <p className="m-0 text-[12px] text-light pl-3 border-l-2 border-primary/40">
+                                      {f.FeeStructure?.name}
+                                    </p>
+                                  </Td>
+                                  <Td className="hidden sm:table-cell" />
+                                  <Td className="text-light hidden md:table-cell text-[12px]">
+                                    {f.FeeStructure?.name}
+                                  </Td>
+                                  <Td className="text-light hidden md:table-cell text-[12px]">
+                                    {f.Session?.name} · {f.Session?.term}
+                                  </Td>
+                                  <Td className="font-medium hidden lg:table-cell whitespace-nowrap text-[12px]">
+                                    {fmt.currency(f.amountCharged)}
+                                  </Td>
+                                  <Td className="text-success font-medium hidden lg:table-cell whitespace-nowrap text-[12px]">
+                                    {fmt.currency(f.amountPaid)}
+                                  </Td>
+                                  <Td className="text-danger font-semibold whitespace-nowrap text-[12px]">
+                                    {fmt.currency(balance)}
+                                  </Td>
+                                  <Td>
+                                    <Badge variant="danger" dot>
+                                      {f.status.replace("_", " ")}
+                                    </Badge>
+                                  </Td>
+                                </Tr>
+                              );
+                            })}
+                        </>
+                      );
+                    },
+                  )}
                 </tbody>
               </Table>
             )}
@@ -656,7 +1026,7 @@ export default function FeesPage() {
         </>
       )}
 
-      {/* Create Structure Modal */}
+      {/* ── Create Structure Modal ─────────────────────────────────────────── */}
       <Modal
         open={modal === "createStructure"}
         onClose={() => setModal(null)}
@@ -769,80 +1139,7 @@ export default function FeesPage() {
         </div>
       </Modal>
 
-      {/* Assign Modal */}
-      <Modal
-        open={modal === "assign"}
-        onClose={() => setModal(null)}
-        title="Assign Fee to Student"
-      >
-        <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
-          <StudentSearchInput
-            schoolId={schoolId}
-            onSelect={setAssignStudent}
-            selectedStudent={assignStudent}
-            onClear={() => setAssignStudent(null)}
-          />
-          <Select
-            label="Fee Structure"
-            options={structureOptions}
-            value={assignFeeStructureId}
-            onChange={(e) => setAssignFeeStructureId(e.target.value)}
-            placeholder="Select a fee structure..."
-            required
-          />
-          <div className="flex gap-2 sm:gap-3 pt-2">
-            <Button
-              variant="secondary"
-              onClick={() => setModal(null)}
-              className="flex-1"
-            >
-              Cancel
-            </Button>
-            <Button loading={saving} onClick={handleAssign} className="flex-1">
-              Assign Fee
-            </Button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Bulk Assign Modal */}
-      <Modal
-        open={modal === "bulkAssign"}
-        onClose={() => setModal(null)}
-        title="Bulk Assign Fee"
-      >
-        <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
-          <p className="text-[13px] sm:text-[14px] text-light m-0">
-            This will assign the selected fee to all students in the
-            corresponding class level.
-          </p>
-          <Select
-            label="Fee Structure"
-            options={structureOptions}
-            value={bulkFeeStructureId}
-            onChange={(e) => setBulkFeeStructureId(e.target.value)}
-            placeholder="Select a fee structure..."
-            required
-          />
-          <div className="flex gap-2 sm:gap-3 pt-2">
-            <Button
-              variant="secondary"
-              onClick={() => setModal(null)}
-              className="flex-1"
-            >
-              Cancel
-            </Button>
-            <Button
-              loading={saving}
-              onClick={handleBulkAssign}
-              className="flex-1"
-            >
-              Bulk Assign
-            </Button>
-          </div>
-        </div>
-      </Modal>
-      {/* Edit Structure Modal */}
+      {/* ── Edit Structure Modal ───────────────────────────────────────────── */}
       <Modal
         open={modal === "editStructure"}
         onClose={() => setModal(null)}
@@ -892,6 +1189,80 @@ export default function FeesPage() {
               className="flex-1"
             >
               Save Changes
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* ── Assign Modal ───────────────────────────────────────────────────── */}
+      <Modal
+        open={modal === "assign"}
+        onClose={() => setModal(null)}
+        title="Assign Fee to Student"
+      >
+        <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
+          <StudentSearchInput
+            schoolId={schoolId}
+            onSelect={setAssignStudent}
+            selectedStudent={assignStudent}
+            onClear={() => setAssignStudent(null)}
+          />
+          <Select
+            label="Fee Structure"
+            options={structureOptions}
+            value={assignFeeStructureId}
+            onChange={(e) => setAssignFeeStructureId(e.target.value)}
+            placeholder="Select a fee structure..."
+            required
+          />
+          <div className="flex gap-2 sm:gap-3 pt-2">
+            <Button
+              variant="secondary"
+              onClick={() => setModal(null)}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button loading={saving} onClick={handleAssign} className="flex-1">
+              Assign Fee
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* ── Bulk Assign Modal ──────────────────────────────────────────────── */}
+      <Modal
+        open={modal === "bulkAssign"}
+        onClose={() => setModal(null)}
+        title="Bulk Assign Fee"
+      >
+        <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
+          <p className="text-[13px] sm:text-[14px] text-light m-0">
+            This will assign the selected fee to all students in the
+            corresponding class level.
+          </p>
+          <Select
+            label="Fee Structure"
+            options={structureOptions}
+            value={bulkFeeStructureId}
+            onChange={(e) => setBulkFeeStructureId(e.target.value)}
+            placeholder="Select a fee structure..."
+            required
+          />
+          <div className="flex gap-2 sm:gap-3 pt-2">
+            <Button
+              variant="secondary"
+              onClick={() => setModal(null)}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              loading={saving}
+              onClick={handleBulkAssign}
+              className="flex-1"
+            >
+              Bulk Assign
             </Button>
           </div>
         </div>

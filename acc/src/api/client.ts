@@ -87,25 +87,68 @@ export const feeStructuresApi = {
 
 // ─── Student Fees ─────────────────────────────────────────────────────────
 export const studentFeesApi = {
-  assign: (data: any) => api.post("/fees/student-fees", data),
-  bulkAssign: (data: any) => api.post("/fees/student-fees/bulk-assign", data),
-  getForStudent: (studentId: string, sessionId?: string) =>
-    api.get(`/fees/student-fees/student/${studentId}`, {
-      params: sessionId ? { sessionId } : {},
-    }),
-  getOutstanding: (schoolId: string, sessionId?: string) =>
-    api.get(`/fees/student-fees/outstanding/${schoolId}`, {
-      params: sessionId ? { sessionId } : {},
-    }),
-  remove: (id: string) => api.delete(`/fees/student-fees/${id}`),
+  // ─── Assign single fee ─────────────────────
+  assign: (data: {
+    studentId: string;
+    feeStructureId: string;
+    sessionId: string;
+    schoolId: string;
+  }) => api.post("/fees/student-fees", data),
 
-  // 🆕 NEW — Arrears grouped by session/term
+  // ─── Bulk assign ───────────────────────────
+  bulkAssign: (data: {
+    feeStructureId: string;
+    sessionId: string;
+    schoolId: string;
+  }) => api.post("/fees/student-fees/bulk-assign", data),
+
+  // ─── Get all fees for a student ────────────
+  getAllFees: (
+    schoolId: string,
+    params?: {
+      sessionId?: string;
+      level?: string;
+      status?: string;
+      search?: string;
+    },
+  ) =>
+    api.get(`/fees/student-fees/school/${schoolId}`, {
+      params,
+    }),
+
+  // ─── Get outstanding fees (school-wide) ───
+  getOutstanding: (schoolId: string, sessionId?: string, level?: string) =>
+    api.get(`/fees/student-fees/outstanding/${schoolId}`, {
+      params: {
+        ...(sessionId ? { sessionId } : {}),
+        ...(level ? { level } : {}),
+      },
+    }),
+
+  // ─── Outstanding grouped summary ───────────
   getOutstandingSummary: (schoolId: string) =>
     api.get(`/fees/student-fees/outstanding-summary/${schoolId}`),
 
-  // 🆕 NEW — One student's full debt across all sessions
+  // ─── One student's total outstanding ───────
   getStudentOutstanding: (studentId: string) =>
     api.get(`/fees/student-fees/student/${studentId}/outstanding`),
+
+  // ─── Remove fee assignment ─────────────────
+  remove: (id: string) => api.delete(`/fees/student-fees/${id}`),
+
+  // 🆕 OPTIONAL (useful additions based on your backend)
+
+  // ─── Re-fetch after payment (helper pattern)
+  refreshStudentFees: (studentId: string, sessionId?: string) =>
+    api.get(`/fees/student-fees/student/${studentId}`, {
+      params: sessionId ? { sessionId } : {},
+    }),
+
+  // ─── Get outstanding for a specific student filtered by session (client-side convenience)
+  getStudentOutstandingBySession: (studentId: string, sessionId: string) =>
+    api.get(`/fees/student-fees/student/${studentId}/outstanding`, {
+      params: { sessionId },
+    }),
 };
 
 export const studentsApi = {
@@ -168,10 +211,11 @@ export const expensesApi = {
     api.get(`/expenses/school/${schoolId}`, { params }),
 };
 
-// ─── Loans ────────────────────────────────────────────────────────────────
+// ─── Loans ───────────────────────────────────────────────────────────────
 export const loansApi = {
   record: (data: any) => api.post("/loans-donations/loans", data),
-  markPaid: (id: string) => api.put(`/loans-donations/loans/${id}/mark-paid`),
+  repay: (id: string, data: { amount: number; note?: string }) =>
+    api.post(`/loans-donations/loans/${id}/repay`, data),
   getAll: (schoolId: string, params?: any) =>
     api.get(`/loans-donations/loans/school/${schoolId}`, { params }),
 };

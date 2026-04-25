@@ -40,7 +40,6 @@ const emptyForm = {
 };
 
 export default function StudentsPage() {
-  // const { accountingAuth } = useApp();
   const [accountingAuth] = useState<AccountingAuth>(() => {
     const stored = localStorage.getItem("accountingAuth");
     if (!stored) return defaultAuth;
@@ -329,20 +328,27 @@ export default function StudentsPage() {
         />
       </div>
       {/* Level tabs + search */}
-      <div className="flex flex-col gap-3 mb-3 sm:mb-4">
-        <Tabs
-          tabs={LEVEL_OPTIONS}
-          active={levelFilter}
-          onChange={(val) => {
-            setLevelFilter(val);
-            setSearch("");
-          }}
-        />
-        <SearchInput
-          value={search}
-          onChange={setSearch}
-          placeholder="Search by name or surname..."
-        />
+
+      <div className="flex flex-col sm:flex-row gap-3 mb-3 sm:mb-4">
+        <div className="w-full sm:w-56">
+          <Select
+            label=""
+            options={LEVEL_OPTIONS}
+            value={levelFilter}
+            onChange={(e) => {
+              setLevelFilter(e.target.value);
+              setSearch("");
+            }}
+          />
+        </div>
+
+        <div className="w-full">
+          <SearchInput
+            value={search}
+            onChange={setSearch}
+            placeholder="Search by name or surname..."
+          />
+        </div>
       </div>
       <Card padding={false}>
         {loading ? (
