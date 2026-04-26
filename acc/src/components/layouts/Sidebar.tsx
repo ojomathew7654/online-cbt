@@ -121,7 +121,7 @@ function NavItems({ onNavigate }: { onNavigate?: () => void }) {
 // ─── Shared header logo block ───────────────────────────────────────────────
 function SidebarLogo() {
   return (
-    <div className="px-5 py-6 border-b border-bg-deep shrink-0">
+    <div className="px-5 py-4 border-b border-bg-deep shrink-0">
       <div className="flex items-center gap-3">
         <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain" />
         <div>
@@ -138,7 +138,7 @@ function SidebarLogo() {
 // ─── Shared logout + footer block ──────────────────────────────────────────
 function SidebarFooter({ onLogout }: { onLogout: () => void }) {
   return (
-    <div className="px-3 py-4 border-t border-bg-deep shrink-0 space-y-2">
+    <div className="p-3 border-t border-bg-deep shrink-0 space-y-2">
       <button
         onClick={onLogout}
         className="w-full flex items-center cursor-pointer gap-2.5 px-3 py-2.5 rounded-lg text-[13px] font-medium text-light hover:text-danger hover:bg-danger/10 transition-all group"
@@ -170,6 +170,33 @@ export default function Sidebar() {
     setConfirmLogout(false);
     navigate("/");
   };
+
+  function CurrentSessionDisplay() {
+    const { accountingAuth } = useApp();
+
+    const current = accountingAuth.sessions?.find(
+      (s) => s.id === accountingAuth.currentSessionId,
+    );
+
+    if (!current) return null;
+
+    return (
+      <div className="px-4 py-1 border-b border-bg-deep">
+        <div className="bg-bg-deep rounded-lg px-3 py-2">
+          <p className="text-[10px] text-light uppercase tracking-wide m-0">
+            Current Session
+          </p>
+          <div className="flex items-center gap-2">
+            <p className="text-[13px] font-semibold text-white m-0">
+              {current.name}
+            </p>
+            <span className="text-light text-[10px]">•</span>
+            <p className="text-[11px] text-light m-0">{current.term} Term</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -203,7 +230,7 @@ export default function Sidebar() {
         }`}
       >
         {/* Close button */}
-        <div className="px-5 py-6 border-b border-bg-deep flex items-center justify-between shrink-0">
+        <div className="px-5 py-4 border-b border-bg-deep flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
             <img
               src="/logo.png"
@@ -227,14 +254,15 @@ export default function Sidebar() {
             <X size={16} />
           </button>
         </div>
-
+        <CurrentSessionDisplay />
         <NavItems onNavigate={() => setMobileOpen(false)} />
         <SidebarFooter onLogout={() => setConfirmLogout(true)} />
       </aside>
 
       {/* ── Desktop sidebar (always visible on lg+) ─────────────────────── */}
-      <aside className="hidden lg:flex w-[240px] shrink-0 bg-bg border-r border-bg-deep flex-col h-screen sticky top-0 overflow-hidden">
+      <aside className="hidden lg:flex w-60 shrink-0 bg-bg border-r border-bg-deep flex-col h-screen sticky top-0 overflow-hidden">
         <SidebarLogo />
+        <CurrentSessionDisplay />
         <NavItems />
         <SidebarFooter onLogout={() => setConfirmLogout(true)} />
       </aside>
