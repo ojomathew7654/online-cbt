@@ -35,6 +35,7 @@ import {
   Tabs,
   StatusToggle,
   StatCard,
+  ConfirmDialog,
 } from "../../components";
 import { fmt, getErrorMessage } from "../../utils/helpers";
 
@@ -348,8 +349,19 @@ export default function FeesPage() {
       setLoading(false);
     }
   };
+  const [removeConfirm, setRemoveConfirm] = useState<string | null>(null);
 
-  // ── Effects ───────────────────────────────────────────────────────────────
+  const handleRemoveFee = async () => {
+    if (!removeConfirm) return;
+    try {
+      await studentFeesApi.remove(removeConfirm);
+      toast.success("Fee removed");
+      setRemoveConfirm(null);
+      loadStudentFees();
+    } catch (err) {
+      toast.error(getErrorMessage(err));
+    }
+  };
 
   useEffect(() => {
     loadStructuresAndAccounts();
@@ -875,25 +887,9 @@ export default function FeesPage() {
                                             size="sm"
                                             variant="ghost"
                                             disabled={f.amountPaid > 0}
-                                            onClick={async (e) => {
+                                            onClick={(e) => {
                                               e.stopPropagation();
-                                              if (
-                                                !confirm(
-                                                  "Remove this fee assignment from student?",
-                                                )
-                                              )
-                                                return;
-                                              try {
-                                                await studentFeesApi.remove(
-                                                  f.id,
-                                                );
-                                                toast.success("Fee removed");
-                                                loadStudentFees();
-                                              } catch (err) {
-                                                toast.error(
-                                                  getErrorMessage(err),
-                                                );
-                                              }
+                                              setRemoveConfirm(f.id);
                                             }}
                                           >
                                             Remove
@@ -1267,6 +1263,15 @@ export default function FeesPage() {
           </div>
         </div>
       </Modal>
+      <ConfirmDialog
+        open={!!removeConfirm}
+        title="Remove Fee Assignment"
+        message="Are you sure you want to remove this fee from the student? This cannot be undone."
+        confirmLabel="Remove"
+        variant="danger"
+        onConfirm={handleRemoveFee}
+        onCancel={() => setRemoveConfirm(null)}
+      />
     </div>
   );
 }

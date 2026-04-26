@@ -261,7 +261,7 @@ loanDonationRoute.get(
     const repayments = await prisma.loanRepayment.findMany({
       where: { loanId: id },
       include: {
-        paidBy: { select: { name: true } },
+        PaidBy: { select: { name: true } },
       },
       orderBy: { createdAt: "desc" },
     });
@@ -288,7 +288,7 @@ loanDonationRoute.get(
         CashAccount: { select: { name: true, code: true } },
         repayments: {
           orderBy: { createdAt: "desc" },
-          include: { paidBy: { select: { name: true } } },
+          include: { PaidBy: { select: { name: true } } },
         },
       },
       orderBy: { dateReceived: "desc" },

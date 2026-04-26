@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink, useLocation, useNavigate, Outlet } from "react-router-dom";
-import { School, LogOut, Menu, X, ChevronRight } from "lucide-react";
+import { School, LogOut, Menu, X, ChevronRight, Users } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { ConfirmDialog } from "..";
 
@@ -45,35 +45,39 @@ export default function SuperAdminLayout() {
         <p className="text-[10px] font-bold text-light uppercase tracking-widest mb-2 px-3">
           Management
         </p>
-        {[{ to: "/super-admin", label: "Schools", icon: School }].map(
-          ({ to, label, icon: Icon }) => {
-            const isActive = location.pathname.startsWith(to);
-            return (
-              <NavLink
-                key={to}
-                to={to}
-                onClick={() => setMobileOpen(false)}
-                className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-all group ${
-                  isActive
-                    ? "bg-(--color-primary-variant) text-white border border-(--color-primary-variant)"
-                    : "text-light hover:text-(--color-primary) hover:bg-bg-deep"
-                }`}
-              >
-                <Icon
-                  size={15}
-                  className={`shrink-0 ${isActive ? "text-(--color-primary)" : "text-light group-hover:text-white"}`}
+        {[
+          { to: "/super-admin", label: "Schools", icon: School },
+          { to: "/super-admin/users", label: "Users", icon: Users },
+        ].map(({ to, label, icon: Icon }) => {
+          const isActive =
+            to === "/super-admin"
+              ? location.pathname === "/super-admin"
+              : location.pathname.startsWith(to);
+          return (
+            <NavLink
+              key={to}
+              to={to}
+              onClick={() => setMobileOpen(false)}
+              className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-all group ${
+                isActive
+                  ? "bg-(--color-primary-variant) text-white border border-(--color-primary-variant)"
+                  : "text-light hover:text-(--color-primary) hover:bg-bg-deep"
+              }`}
+            >
+              <Icon
+                size={15}
+                className={`shrink-0 ${isActive ? "text-(--color-primary)" : "text-light group-hover:text-white"}`}
+              />
+              {label}
+              {isActive && (
+                <ChevronRight
+                  size={12}
+                  className="ml-auto text-(--color-primary-variant)"
                 />
-                {label}
-                {isActive && (
-                  <ChevronRight
-                    size={12}
-                    className="ml-auto text-(--color-primary-variant)"
-                  />
-                )}
-              </NavLink>
-            );
-          },
-        )}
+              )}
+            </NavLink>
+          );
+        })}
       </nav>
 
       <div className="px-3 py-4 border-t border-bg-deep shrink-0">

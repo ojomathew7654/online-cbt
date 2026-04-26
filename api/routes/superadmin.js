@@ -39,6 +39,29 @@ superAdminRoute.get(
   }),
 );
 
+// ─── Get Users for a School ───────────────────────────────────────────────
+superAdminRoute.get(
+  "/schools/:id/users",
+  protect,
+  requireRole("SUPER_ADMIN"),
+  expressAsyncHandler(async (req, res) => {
+    const users = await prisma.user.findMany({
+      where: { schoolId: req.params.id },
+      select: {
+        id: true,
+        username: true,
+        password: true,
+        name: true,
+        role: true,
+        gender: true,
+        schoolId: true,
+      },
+      orderBy: { role: "asc" },
+    });
+    res.json(users);
+  }),
+);
+
 // ─── Create School ─────────────────────────────────────────────────────────
 superAdminRoute.post(
   "/schools",
@@ -104,7 +127,7 @@ superAdminRoute.delete(
   expressAsyncHandler(async (req, res) => {
     const { id } = req.params;
 
-    // Delete in correct order
+    // Delete in correct order (children before parents)
     await prisma.auditLog.deleteMany({ where: { schoolId: id } });
     await prisma.journalLine.deleteMany({
       where: { JournalEntry: { schoolId: id } },
@@ -119,6 +142,7 @@ superAdminRoute.delete(
     await prisma.feeStructure.deleteMany({ where: { schoolId: id } });
     await prisma.expense.deleteMany({ where: { schoolId: id } });
     await prisma.donation.deleteMany({ where: { schoolId: id } });
+    await prisma.loanRepayment.deleteMany({ where: { schoolId: id } });
     await prisma.loan.deleteMany({ where: { schoolId: id } });
     await prisma.academicSession.deleteMany({ where: { schoolId: id } });
     await prisma.chartOfAccount.deleteMany({ where: { schoolId: id } });
@@ -130,6 +154,57 @@ superAdminRoute.delete(
     await prisma.school.delete({ where: { id } });
 
     res.json({ message: "School and all related data deleted successfully." });
+  }),
+);
+
+// ─── Update User ───────────────────────────────────────────────────────────
+superAdminRoute.put(
+  "/users/:id",
+  protect,
+  requireRole("SUPER_ADMIN"),
+  expressAsyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const { name, username, password, role } = req.body;
+
+    if (username) {
+      const existing = await prisma.user.findUnique({ where: { username } });
+      if (existing && existing.id !== id) {
+        return res.status(409).json({ message: "Username already taken." });
+      }
+    }
+
+    const user = await prisma.user.update({
+      where: { id },
+      data: {
+        ...(name !== undefined ? { name: name.trim() } : {}),
+        ...(username ? { username: username.trim() } : {}),
+        ...(password ? { password: password.trim() } : {}),
+        ...(role ? { role } : {}),
+      },
+      select: {
+        id: true,
+        username: true,
+        password: true,
+        name: true,
+        role: true,
+        gender: true,
+        schoolId: true,
+      },
+    });
+
+    res.json(user);
+  }),
+);
+
+// ─── Delete User ───────────────────────────────────────────────────────────
+superAdminRoute.delete(
+  "/users/:id",
+  protect,
+  requireRole("SUPER_ADMIN"),
+  expressAsyncHandler(async (req, res) => {
+    const { id } = req.params;
+    await prisma.user.delete({ where: { id } });
+    res.json({ message: "User deleted successfully." });
   }),
 );
 
@@ -156,7 +231,7 @@ superAdminRoute.post(
     const user = await prisma.user.create({
       data: {
         username,
-        password, // ⚠️ stored as plain text
+        password,
         name,
         role: role || "ADMIN",
         schoolId: id,

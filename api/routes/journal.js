@@ -168,6 +168,7 @@ journalRoute.put(
 
 // ─── Reverse a Posted Journal Entry ───────────────────────────────────────
 // Creates a new entry with all debits/credits flipped
+
 journalRoute.post(
   "/:id/reverse",
   protect,
@@ -176,7 +177,9 @@ journalRoute.post(
     const { reason } = req.body;
     const createdById = req.user.id;
 
-    // ✅ Do this OUTSIDE transaction
+    // ─────────────────────────────
+    // FETCH ORIGINAL
+    // ─────────────────────────────
     const original = await prisma.journalEntry.findUnique({
       where: { id },
       include: { lines: true },
@@ -198,10 +201,14 @@ journalRoute.post(
 
     await assertSessionNotLocked(original.sessionId);
 
-    // ✅ Also outside (can be slow)
     const entryNumber = await generateEntryNumber(original.schoolId);
 
+    // ─────────────────────────────
+    // PRE-FETCH RELATED RECORDS
+    // ─────────────────────────────
     let feePayment = null;
+    let loanRepayment = null;
+
     if (original.source === "FEE_PAYMENT") {
       feePayment = await prisma.feePayment.findFirst({
         where: { journalEntryId: original.id },
@@ -213,8 +220,21 @@ journalRoute.post(
       }
     }
 
-    // ⚡ ONLY critical writes inside transaction
+    if (original.source === "LOAN_REPAYMENT") {
+      loanRepayment = await prisma.loanRepayment.findFirst({
+        where: { journalEntryId: original.id },
+      });
+
+      if (!loanRepayment || loanRepayment.journalEntryId === null) {
+        throw new Error("Already reversed.");
+      }
+    }
+
+    // ─────────────────────────────
+    // TRANSACTION
+    // ─────────────────────────────
     const result = await prisma.$transaction(async (tx) => {
+      // 1. Create reversal entry
       const reversalEntry = await tx.journalEntry.create({
         data: {
           entryNumber,
@@ -241,11 +261,15 @@ journalRoute.post(
         include: { lines: true },
       });
 
+      // 2. Mark original as reversed
       await tx.journalEntry.update({
         where: { id },
         data: { status: "REVERSED" },
       });
 
+      // ─────────────────────────────
+      // FEE PAYMENT REVERSAL
+      // ─────────────────────────────
       if (original.source === "FEE_PAYMENT" && feePayment) {
         const studentFee = feePayment.StudentFee;
 
@@ -275,6 +299,9 @@ journalRoute.post(
         });
       }
 
+      // ─────────────────────────────
+      // EXPENSE REVERSAL
+      // ─────────────────────────────
       if (original.source === "EXPENSE") {
         const expense = await tx.expense.findFirst({
           where: { journalEntryId: original.id },
@@ -293,10 +320,43 @@ journalRoute.post(
         }
       }
 
+      // ─────────────────────────────
+      // 🔥 LOAN REPAYMENT REVERSAL (FIX)
+      // ─────────────────────────────
+      if (original.source === "LOAN_REPAYMENT" && loanRepayment) {
+        const loan = await tx.loan.findUnique({
+          where: { id: loanRepayment.loanId },
+        });
+
+        if (!loan) throw new Error("Loan not found.");
+
+        const newAmountRepaid = Math.max(
+          0,
+          loan.amountRepaid - loanRepayment.amount,
+        );
+
+        const newStatus = newAmountRepaid >= loan.amount ? "PAID" : "ACTIVE";
+
+        await tx.loan.update({
+          where: { id: loan.id },
+          data: {
+            amountRepaid: newAmountRepaid,
+            status: newStatus,
+          },
+        });
+
+        await tx.loanRepayment.update({
+          where: { id: loanRepayment.id },
+          data: { journalEntryId: null },
+        });
+      }
+
       return reversalEntry;
     });
 
-    // ✅ OUTSIDE transaction (important)
+    // ─────────────────────────────
+    // AUDIT LOG
+    // ─────────────────────────────
     await createAuditLog({
       action: "REVERSE",
       entity: "JournalEntry",

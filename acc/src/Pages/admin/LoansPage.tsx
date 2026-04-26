@@ -25,8 +25,9 @@ import {
   Tr,
   EmptyState,
   StatCard,
+  ConfirmDialog,
 } from "../../components";
-import { fmt, getErrorMessage } from "../../utils/helpers";
+import { fmt, loanStatusColor, getErrorMessage } from "../../utils/helpers";
 
 export default function LoansPage() {
   const { accountingAuth } = useApp();
@@ -383,7 +384,7 @@ export default function LoansPage() {
                             </p>
                             <p className="m-0 text-[11px] text-light/60 pl-3">
                               {fmt.date(r.createdAt)}
-                              {r.paidBy?.name ? ` · ${r.paidBy.name}` : ""}
+                              {r.PaidBy?.name ? ` · ${r.PaidBy.name}` : ""}
                             </p>
                           </Td>
                           {/* original col — blank */}

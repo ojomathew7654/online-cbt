@@ -273,12 +273,15 @@ export const reportsApi = {
 export const superAdminApi = {
   getSchools: () => api.get("/super-admin/schools"),
   getSchool: (id: string) => api.get(`/super-admin/schools/${id}`),
+  getSchoolUsers: (id: string) => api.get(`/super-admin/schools/${id}/users`),
   createSchool: (data: any) => api.post("/super-admin/schools", data),
   updateSchool: (id: string, data: any) =>
     api.put(`/super-admin/schools/${id}`, data),
   deleteSchool: (id: string) => api.delete(`/super-admin/schools/${id}`),
   createAdmin: (schoolId: string, data: any) =>
     api.post(`/super-admin/schools/${schoolId}/admins`, data),
+  updateUser: (id: string, data: any) =>
+    api.put(`/super-admin/users/${id}`, data),
+  deleteUser: (id: string) => api.delete(`/super-admin/users/${id}`),
 };
-
 export default api;

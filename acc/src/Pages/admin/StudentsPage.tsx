@@ -27,6 +27,7 @@ import {
   EmptyState,
   SearchInput,
   StatCard,
+  ConfirmDialog,
 } from "../../components";
 import { fmt, getErrorMessage } from "../../utils/helpers";
 
@@ -82,12 +83,29 @@ export default function StudentsPage() {
   const [selectedStudent, setSelectedStudent] = useState<any | null>(null);
   const [promoting, setPromoting] = useState(false);
   const [promoteModal, setPromoteModal] = useState(false);
+  const [removeFeeConfirm, setRemoveFeeConfirm] = useState<string | null>(null);
   const [promoteForm, setPromoteForm] = useState({
     fromLevel: "",
     toLevel: "",
     fromYear: "",
     toYear: "",
   });
+
+  const handleRemoveFee = async () => {
+    if (!removeFeeConfirm) return;
+    try {
+      await studentFeesApi.remove(removeFeeConfirm);
+      toast.success("Fee removed successfully.");
+      setRemoveFeeConfirm(null);
+      const res = await studentFeesApi.getForStudent(
+        selectedStudent.id,
+        currentSessionId || undefined,
+      );
+      setStudentFees(res.data);
+    } catch (e) {
+      toast.error(getErrorMessage(e));
+    }
+  };
 
   // Add this state
   const [studentOutstanding, setStudentOutstanding] = useState<any>({
@@ -223,21 +241,6 @@ export default function StudentsPage() {
       toast.error(getErrorMessage(e));
     } finally {
       setDeleting(false);
-    }
-  };
-
-  const handleRemoveFee = async (feeId: string) => {
-    try {
-      await studentFeesApi.remove(feeId);
-      toast.success("Fee removed successfully.");
-      // Refresh fees list
-      const res = await studentFeesApi.getForStudent(
-        selectedStudent.id,
-        currentSessionId || undefined,
-      );
-      setStudentFees(res.data);
-    } catch (e) {
-      toast.error(getErrorMessage(e));
     }
   };
 
@@ -650,7 +653,7 @@ export default function StudentsPage() {
                       </div>
                       {f.amountPaid === 0 && (
                         <button
-                          onClick={() => handleRemoveFee(f.id)}
+                          onClick={() => setRemoveFeeConfirm(f.id)}
                           className="p-1.5 rounded-md cursor-pointer text-light hover:text-danger hover:bg-danger/10 transition-all shrink-0"
                           title="Remove fee assignment"
                         >
@@ -796,6 +799,15 @@ export default function StudentsPage() {
           </div>
         </div>
       </Modal>
+      <ConfirmDialog
+        open={!!removeFeeConfirm}
+        title="Remove Fee Assignment"
+        message="Are you sure you want to remove this fee from the student? This cannot be undone."
+        confirmLabel="Remove"
+        variant="danger"
+        onConfirm={handleRemoveFee}
+        onCancel={() => setRemoveFeeConfirm(null)}
+      />
     </div>
   );
 }

@@ -127,13 +127,20 @@ export default function SuperAdminPage() {
   };
 
   const handleCreateAdmin = async () => {
-    if (!adminForm.username || !adminForm.password) {
+    const trimmed = {
+      ...adminForm,
+      name: adminForm.name.trim(),
+      username: adminForm.username.trim(),
+      password: adminForm.password.trim(),
+    };
+
+    if (!trimmed.username || !trimmed.password) {
       toast.error("Username and password are required.");
       return;
     }
     setSaving(true);
     try {
-      await superAdminApi.createAdmin(selected.id, adminForm);
+      await superAdminApi.createAdmin(selected.id, trimmed);
       toast.success("Admin user created successfully.");
       setModal(null);
       setAdminForm(emptyAdminForm);

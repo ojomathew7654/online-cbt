@@ -21,6 +21,7 @@ import Layout from "./components/layouts/Layout";
 import DashboardPage from "./Pages/admin/DashboardPage";
 import SuperAdminPage from "./Pages/superadmin/SuperAdminPage";
 import OtherTransactionsPage from "./Pages/admin/OtherTransactionsPage";
+import SuperAdminUsersPage from "./Pages/superadmin/SuperAdminUsersPage";
 
 export default function App() {
   return (
@@ -49,6 +50,10 @@ export default function App() {
             <Route path="/reports" element={<ReportsPage />} />
             <Route path="/audit" element={<AuditPage />} />
             <Route path="/super-admin" element={<SuperAdminPage />} />
+            <Route
+              path="/super-admin/users"
+              element={<SuperAdminUsersPage />}
+            />
           </Route>
         </Routes>
       </ToastProvider>
