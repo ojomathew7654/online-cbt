@@ -168,7 +168,6 @@ journalRoute.put(
 
 // ─── Reverse a Posted Journal Entry ───────────────────────────────────────
 // Creates a new entry with all debits/credits flipped
-
 journalRoute.post(
   "/:id/reverse",
   protect,
@@ -315,6 +314,32 @@ journalRoute.post(
               approvedById: null,
               approvedAt: null,
               journalEntryId: null,
+            },
+          });
+        }
+      }
+
+      if (original.source === "LOAN") {
+        const loan = await tx.loan.findFirst({
+          where: { journalEntryId: original.id },
+        });
+
+        if (loan) {
+          const repayments = await tx.loanRepayment.findMany({
+            where: { loanId: loan.id },
+          });
+
+          if (repayments.length > 0) {
+            throw new Error(
+              "Cannot reverse this loan until repayments are reversed.",
+            );
+          }
+
+          await tx.loan.update({
+            where: { id: loan.id },
+            data: {
+              status: "REVERSED",
+              amountRepaid: 0,
             },
           });
         }

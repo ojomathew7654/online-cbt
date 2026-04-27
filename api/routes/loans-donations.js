@@ -14,9 +14,6 @@ import { protect } from "../middleware/auth.js";
 // ════════════════════════════════════════════════
 
 // ─── Record Loan Received ─────────────────────────────────────────────────
-// ACCOUNTING RULE:
-//   Debit:  Cash account      (money received)
-//   Credit: Loan Liability    (obligation created)
 loanDonationRoute.post(
   "/loans",
   protect,
@@ -121,10 +118,6 @@ loanDonationRoute.post(
 );
 
 // ─── Repay Loan (Partial or Full) ─────────────────────────────────────────
-// Supports multiple partial repayments. Auto-marks PAID when balance hits 0.
-// ACCOUNTING RULE (each repayment):
-//   Debit:  Loan Liability account  (reduces the debt)
-//   Credit: Cash account            (cash leaves the school)
 loanDonationRoute.post(
   "/loans/:id/repay",
   protect,
@@ -145,10 +138,16 @@ loanDonationRoute.post(
       return res.status(404).json({ message: "Loan not found." });
     }
 
+    if (loan.status === "REVERSED") {
+      return res.status(400).json({
+        message: "This loan has been reversed and cannot be repaid.",
+      });
+    }
+
     if (loan.status === "PAID") {
-      return res
-        .status(400)
-        .json({ message: "This loan is already fully paid." });
+      return res.status(400).json({
+        message: "This loan is already fully paid.",
+      });
     }
 
     await assertSessionNotLocked(loan.sessionId);

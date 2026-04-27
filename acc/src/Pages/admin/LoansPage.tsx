@@ -68,13 +68,27 @@ export default function LoansPage() {
     .filter((a) => a.accountType === "ASSET" && a.isActive)
     .map((a) => ({ value: a.id, label: `${a.code} — ${a.name}` }));
 
-  const activeLoans = loans.filter((l) => l.status === "ACTIVE");
-  const totalOutstanding = activeLoans.reduce(
+  // const activeLoans = loans.filter((l) => l.status === "ACTIVE");
+  // const totalOutstanding = activeLoans.reduce(
+  //   (sum, l) => sum + (l.amount - l.amountRepaid),
+  //   0,
+  // );
+
+  const validLoans = loans.filter((l) => l.status !== "REVERSED");
+
+  const activeLoans = validLoans.filter((l) => l.status === "ACTIVE");
+
+  const totalOutstanding = validLoans.reduce(
     (sum, l) => sum + (l.amount - l.amountRepaid),
     0,
   );
-  const totalRepaid = loans.reduce((sum, l) => sum + l.amountRepaid, 0);
-  const totalBorrowed = loans.reduce((sum, l) => sum + l.amount, 0);
+
+  const totalRepaid = validLoans.reduce((sum, l) => sum + l.amountRepaid, 0);
+
+  const totalBorrowed = validLoans.reduce((sum, l) => sum + l.amount, 0);
+
+  // const totalRepaid = loans.reduce((sum, l) => sum + l.amountRepaid, 0);
+  // const totalBorrowed = loans.reduce((sum, l) => sum + l.amount, 0);
 
   // ── Load ──────────────────────────────────────────────────────────────────
   const load = async () => {

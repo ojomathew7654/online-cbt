@@ -246,8 +246,6 @@ model LoanRepayment {
   createdAt      DateTime @default(now())
 }
 
-// ─────────────────────────────────────────────
-
 model Donation {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
   donorName   String?
@@ -515,6 +513,7 @@ enum EntryType {
 enum LoanStatus {
   ACTIVE
   PAID
+  REVERSED
 }
 
 enum JournalSource {
