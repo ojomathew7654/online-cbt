@@ -68,6 +68,10 @@ export const journalApi = {
   getOne: (id: string) => api.get(`/journal/${id}`),
   generateClosingEntry: (schoolId: string, sessionId: string) =>
     api.get(`/journal/closing-entry/${schoolId}`, { params: { sessionId } }),
+
+  // // ⚠️ DEV ONLY — remove before production
+  // cleanupLoans: (schoolId: string) =>
+  //   api.delete(`/journal/cleanup-apr18/${schoolId}`),
 };
 
 // ─── Fee Structures ───────────────────────────────────────────────────────

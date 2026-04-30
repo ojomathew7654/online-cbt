@@ -67,7 +67,7 @@ export default function JournalPage() {
   useEffect(() => {
     load();
   }, [schoolId, currentSessionId]);
-
+  console.log(entries);
   const filtered = entries.filter((e) => {
     const matchStatus = statusFilter === "ALL" || e.status === statusFilter;
     const matchSearch =

@@ -3,9 +3,23 @@ import prisma from "../prisma/prisma.js";
 /**
  * Generate a sequential entry number like JE-20250001
  */
+
 export async function generateEntryNumber(schoolId) {
-  const count = await prisma.journalEntry.count({ where: { schoolId } });
-  const padded = String(count + 1).padStart(4, "0");
+  const last = await prisma.journalEntry.findFirst({
+    where: { schoolId },
+    orderBy: { createdAt: "desc" },
+    select: { entryNumber: true },
+  });
+
+  let nextNum = 1;
+
+  if (last?.entryNumber) {
+    // Extract the last 4 digits: "JE-20260009" → 9
+    const match = last.entryNumber.match(/(\d{4})$/);
+    if (match) nextNum = parseInt(match[1]) + 1;
+  }
+
+  const padded = String(nextNum).padStart(4, "0");
   const year = new Date().getFullYear();
   return `JE-${year}${padded}`;
 }
@@ -13,9 +27,21 @@ export async function generateEntryNumber(schoolId) {
 /**
  * Generate a receipt number like RCP-20250001
  */
+
 export async function generateReceiptNumber() {
-  const count = await prisma.feePayment.count();
-  const padded = String(count + 1).padStart(4, "0");
+  const last = await prisma.feePayment.findFirst({
+    orderBy: { createdAt: "desc" },
+    select: { receiptNumber: true },
+  });
+
+  let nextNum = 1;
+
+  if (last?.receiptNumber) {
+    const match = last.receiptNumber.match(/(\d{4})$/);
+    if (match) nextNum = parseInt(match[1]) + 1;
+  }
+
+  const padded = String(nextNum).padStart(4, "0");
   const year = new Date().getFullYear();
   return `RCP-${year}${padded}`;
 }

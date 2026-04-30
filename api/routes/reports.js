@@ -284,8 +284,6 @@ reportsRoute.get(
 
     const netProfit = revenue.total - expenses.total;
 
-    console.log(revenue);
-
     res.json({
       revenue,
       expenses,

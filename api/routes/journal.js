@@ -569,4 +569,249 @@ journalRoute.get(
   }),
 );
 
+// DELETE /api/dev/cleanup-loans/:schoolId
+// ⚠️ REMOVE THIS ROUTE BEFORE PRODUCTION
+// journalRoute.delete(
+//   "/cleanup-loans/:schoolId",
+//   expressAsyncHandler(async (req, res) => {
+//     const { schoolId } = req.params;
+
+//     // 1. Find all loans
+//     const loans = await prisma.loan.findMany({
+//       where: { schoolId },
+//       select: { id: true, journalEntryId: true, repaymentJournalEntryId: true },
+//     });
+
+//     if (loans.length === 0) {
+//       return res.json({ message: "No loans found. Nothing deleted." });
+//     }
+
+//     const loanIds = loans.map((l) => l.id);
+
+//     const loanJournalEntryIds = loans
+//       .flatMap((l) => [l.journalEntryId, l.repaymentJournalEntryId])
+//       .filter(Boolean);
+
+//     // 2. Find repayments and their journal entries
+//     const repayments = await prisma.loanRepayment.findMany({
+//       where: { loanId: { in: loanIds } },
+//       select: { id: true, journalEntryId: true },
+//     });
+
+//     const repaymentJournalEntryIds = repayments
+//       .map((r) => r.journalEntryId)
+//       .filter(Boolean);
+
+//     // 3. Find reversal entries
+//     const allSourceIds = [
+//       ...new Set([...loanJournalEntryIds, ...repaymentJournalEntryIds]),
+//     ];
+
+//     const reversalEntries = await prisma.journalEntry.findMany({
+//       where: { reversalOfId: { in: allSourceIds }, schoolId },
+//       select: { id: true },
+//     });
+
+//     const allJournalEntryIds = [
+//       ...new Set([...allSourceIds, ...reversalEntries.map((e) => e.id)]),
+//     ];
+
+//     // ── Sequential deletes (no transaction — avoids MongoDB deadlock) ──
+
+//     // 4. Nullify reversalOfId first (break self-relation)
+//     await prisma.journalEntry.updateMany({
+//       where: { id: { in: allJournalEntryIds } },
+//       data: { reversalOfId: null },
+//     });
+
+//     // 5. Delete journal lines
+//     const deletedLines = await prisma.journalLine.deleteMany({
+//       where: { journalEntryId: { in: allJournalEntryIds } },
+//     });
+
+//     // 6. Nullify journalEntryId on repayments
+//     await prisma.loanRepayment.updateMany({
+//       where: { loanId: { in: loanIds } },
+//       data: { journalEntryId: null },
+//     });
+
+//     // 7. Delete repayments
+//     const deletedRepayments = await prisma.loanRepayment.deleteMany({
+//       where: { loanId: { in: loanIds } },
+//     });
+
+//     // 8. Delete journal entries
+//     const deletedJournalEntries = await prisma.journalEntry.deleteMany({
+//       where: { id: { in: allJournalEntryIds } },
+//     });
+
+//     // 9. Delete loans
+//     const deletedLoans = await prisma.loan.deleteMany({
+//       where: { schoolId },
+//     });
+
+//     res.json({
+//       message: "✅ All loan test data cleaned up successfully.",
+//       summary: {
+//         deletedLines: deletedLines.count,
+//         deletedRepayments: deletedRepayments.count,
+//         deletedJournalEntries: deletedJournalEntries.count,
+//         deletedLoans: deletedLoans.count,
+//       },
+//     });
+//   }),
+// );
+
+// // ⚠️ DEV ONLY — remove before production
+// journalRoute.delete(
+//   "/cleanup-donations/:schoolId",
+//   expressAsyncHandler(async (req, res) => {
+//     const { schoolId } = req.params;
+
+//     // 1. Find all donations
+//     const donations = await prisma.donation.findMany({
+//       where: { schoolId },
+//       select: { id: true, journalEntryId: true },
+//     });
+
+//     if (donations.length === 0) {
+//       return res.json({ message: "No donations found. Nothing deleted." });
+//     }
+
+//     const donationJournalEntryIds = donations
+//       .map((d) => d.journalEntryId)
+//       .filter(Boolean);
+
+//     // 2. Find reversal entries pointing to donation journal entries
+//     const reversalEntries = await prisma.journalEntry.findMany({
+//       where: { reversalOfId: { in: donationJournalEntryIds }, schoolId },
+//       select: { id: true },
+//     });
+
+//     const reversalEntryIds = reversalEntries.map((e) => e.id);
+
+//     const allJournalEntryIds = [
+//       ...new Set([...donationJournalEntryIds, ...reversalEntryIds]),
+//     ];
+
+//     // 3. Nullify reversalOfId to break self-relation
+//     await prisma.journalEntry.updateMany({
+//       where: { id: { in: allJournalEntryIds } },
+//       data: { reversalOfId: null },
+//     });
+
+//     // 4. Delete journal lines
+//     const deletedLines = await prisma.journalLine.deleteMany({
+//       where: { journalEntryId: { in: allJournalEntryIds } },
+//     });
+
+//     // 5. Nullify journalEntryId on donations before deleting them
+//     await prisma.donation.updateMany({
+//       where: { schoolId },
+//       data: { journalEntryId: null },
+//     });
+
+//     // 6. Delete journal entries
+//     const deletedJournalEntries = await prisma.journalEntry.deleteMany({
+//       where: { id: { in: allJournalEntryIds } },
+//     });
+
+//     // 7. Delete donations
+//     const deletedDonations = await prisma.donation.deleteMany({
+//       where: { schoolId },
+//     });
+
+//     res.json({
+//       message: "✅ All donation test data cleaned up successfully.",
+//       summary: {
+//         deletedLines: deletedLines.count,
+//         deletedJournalEntries: deletedJournalEntries.count,
+//         deletedDonations: deletedDonations.count,
+//       },
+//     });
+//   }),
+// );
+// ⚠️ DEV ONLY — remove before production
+// journalRoute.delete(
+//   "/cleanup-apr18/:schoolId",
+//   expressAsyncHandler(async (req, res) => {
+//     const { schoolId } = req.params;
+
+//     const targetDate = new Date("2026-04-18T00:00:00.000Z");
+//     const nextDay = new Date("2026-04-19T00:00:00.000Z");
+
+//     // 1. Find all journal entries on Apr 18
+//     const entries = await prisma.journalEntry.findMany({
+//       where: {
+//         schoolId,
+//         date: { gte: targetDate, lt: nextDay },
+//         source: "FEE_PAYMENT",
+//       },
+//       select: { id: true },
+//     });
+
+//     const entryIds = entries.map((e) => e.id);
+
+//     if (entryIds.length === 0) {
+//       return res.json({ message: "No Apr 18 fee payment entries found." });
+//     }
+
+//     // 2. Find fee payments linked to these journal entries
+//     const payments = await prisma.feePayment.findMany({
+//       where: { journalEntryId: { in: entryIds } },
+//       select: { id: true, studentFeeId: true, amountPaid: true },
+//     });
+
+//     // 3. Reverse each studentFee's amountPaid and status
+//     for (const payment of payments) {
+//       const studentFee = await prisma.studentFee.findUnique({
+//         where: { id: payment.studentFeeId },
+//       });
+
+//       if (studentFee) {
+//         const restoredAmount = Math.max(
+//           0,
+//           studentFee.amountPaid - payment.amountPaid,
+//         );
+//         const restoredStatus =
+//           restoredAmount <= 0
+//             ? "UNPAID"
+//             : restoredAmount >= studentFee.amountCharged
+//               ? "PAID"
+//               : "PARTIALLY_PAID";
+
+//         await prisma.studentFee.update({
+//           where: { id: payment.studentFeeId },
+//           data: { amountPaid: restoredAmount, status: restoredStatus },
+//         });
+//       }
+//     }
+
+//     // 4. Delete journal lines
+//     const deletedLines = await prisma.journalLine.deleteMany({
+//       where: { journalEntryId: { in: entryIds } },
+//     });
+
+//     // 5. Delete fee payments
+//     const deletedPayments = await prisma.feePayment.deleteMany({
+//       where: { journalEntryId: { in: entryIds } },
+//     });
+
+//     // 6. Delete journal entries
+//     const deletedEntries = await prisma.journalEntry.deleteMany({
+//       where: { id: { in: entryIds } },
+//     });
+
+//     res.json({
+//       message: "✅ Apr 18 test payment data cleaned up successfully.",
+//       summary: {
+//         deletedJournalLines: deletedLines.count,
+//         deletedPayments: deletedPayments.count,
+//         deletedJournalEntries: deletedEntries.count,
+//         studentFeesRestored: payments.length,
+//       },
+//     });
+//   }),
+// );
+
 export default journalRoute;
