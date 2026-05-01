@@ -27,9 +27,6 @@ const Exam = () => {
   const examId = exam?.id;
   const [allowStudent, setAllowStudent] = useState(false);
 
-  console.log(exam);
-  console.log(exams);
-
   useEffect(() => {
     const fetchSchool = async () => {
       try {
@@ -186,7 +183,7 @@ const Exam = () => {
       )}
       <div className="exam-containere">
         <div className="exam-select-container">
-          <select onChange={handleSubjectChange}>
+          <select value={examId || ""} onChange={handleSubjectChange}>
             <option value="">Select Exam</option>
             {exams.map((exam) => (
               <option
