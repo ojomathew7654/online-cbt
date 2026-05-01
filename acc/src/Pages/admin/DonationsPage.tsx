@@ -71,6 +71,12 @@ export default function DonationsPage() {
     load();
   }, [schoolId, currentSessionId]);
 
+  const getDonationStatus = (d: any) => {
+    if (!d.journalEntryId) return "REVERSED";
+    if (d.JournalEntry?.status === "POSTED") return "POSTED";
+    return "UNKNOWN";
+  };
+
   const handleRecord = async () => {
     if (
       !form.amount ||
@@ -107,7 +113,7 @@ export default function DonationsPage() {
       setSaving(false);
     }
   };
-
+  console.log(donations);
   return (
     <div className="p-4 sm:p-6 animate-fade-in">
       <PageHeader
@@ -157,6 +163,7 @@ export default function DonationsPage() {
                 <Th className="hidden md:table-cell">Revenue Account</Th>
                 <Th className="hidden md:table-cell">Cash Account</Th>
                 <Th className="hidden lg:table-cell">Description</Th>
+                <Th className="hidden lg:table-cell">Status</Th>
               </tr>
             </thead>
             <tbody>
@@ -186,6 +193,17 @@ export default function DonationsPage() {
                   </Td>
                   <Td className="text-[var(--color-light)] hidden lg:table-cell">
                     {d.description || "—"}
+                  </Td>
+                  <Td>
+                    {getDonationStatus(d) === "REVERSED" ? (
+                      <span className="text-red-400 font-semibold text-xs">
+                        Reversed
+                      </span>
+                    ) : (
+                      <span className="text-green-400 font-semibold text-xs">
+                        Posted
+                      </span>
+                    )}
                   </Td>
                 </Tr>
               ))}

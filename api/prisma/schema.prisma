@@ -260,7 +260,8 @@ model Donation {
   cashAccountId String         @db.ObjectId
   CashAccount   ChartOfAccount @relation("CashAccountDonation", fields: [cashAccountId], references: [id])
 
-  journalEntryId String? @db.ObjectId
+  journalEntryId String?       @db.ObjectId
+  JournalEntry   JournalEntry? @relation("DonationJournalEntry", fields: [journalEntryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   schoolId String @db.ObjectId
   School   School @relation(fields: [schoolId], references: [id])
@@ -291,9 +292,9 @@ model JournalEntry {
   reversalOfId String?        @db.ObjectId
   ReversalOf   JournalEntry?  @relation("Reversal", fields: [reversalOfId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   reversedBy   JournalEntry[] @relation("Reversal")
-
-  schoolId String @db.ObjectId
-  School   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  Donation     Donation[]     @relation("DonationJournalEntry")
+  schoolId     String         @db.ObjectId
+  School       School         @relation(fields: [schoolId], references: [id], onDelete: Cascade)
 
   sessionId String          @db.ObjectId
   Session   AcademicSession @relation(fields: [sessionId], references: [id])

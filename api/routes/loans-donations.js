@@ -415,11 +415,23 @@ loanDonationRoute.get(
       include: {
         RevenueAccount: { select: { name: true, code: true } },
         CashAccount: { select: { name: true, code: true } },
+        JournalEntry: {
+          select: {
+            id: true,
+            status: true, // "POSTED" or "REVERSED"
+            reversedBy: {
+              select: { id: true, entryNumber: true, date: true },
+            },
+          },
+        },
       },
       orderBy: { date: "desc" },
     });
 
-    const totalDonated = donations.reduce((sum, d) => sum + d.amount, 0);
+    // Only count non-reversed donations in total
+    const totalDonated = donations
+      .filter((d) => d.JournalEntry && d.JournalEntry.status === "POSTED")
+      .reduce((sum, d) => sum + d.amount, 0);
 
     res.json({ donations, totalDonated });
   }),

@@ -20,18 +20,21 @@ const Exam = () => {
   const [redirectAfterAlert, setRedirectAfterAlert] = useState(false);
 
   const schoolId = JSON.parse(
-    localStorage.getItem("loggedInStudent")
+    localStorage.getItem("loggedInStudent"),
   )?.schoolId;
   const hasShuffled = useRef(false);
   const subjectName = exam?.subjectName;
   const examId = exam?.id;
   const [allowStudent, setAllowStudent] = useState(false);
 
+  console.log(exam);
+  console.log(exams);
+
   useEffect(() => {
     const fetchSchool = async () => {
       try {
         const { data } = await axios.get(
-          `${apiUrl}/api/users/school/${schoolId}`
+          `${apiUrl}/api/users/school/${schoolId}`,
         );
         setAllowStudent(data.viewExamHistory);
       } catch (error) {
@@ -48,7 +51,7 @@ const Exam = () => {
       try {
         setLoading(true);
         const { data } = await axios.get(
-          `${apiUrl}/api/exams/visible-true-exams/${schoolId}`
+          `${apiUrl}/api/exams/visible-true-exams/${schoolId}`,
         );
         setExams(data);
       } catch (error) {
@@ -89,7 +92,7 @@ const Exam = () => {
       try {
         setLoading(true);
         const { data } = await axios.get(
-          `${apiUrl}/api/exams/exam/${selectedExamId}`
+          `${apiUrl}/api/exams/exam/${selectedExamId}`,
         );
         setExam(data);
       } catch (error) {
@@ -110,9 +113,8 @@ const Exam = () => {
         {
           subjects: updatedSubjects,
           studentId,
-        }
+        },
       );
-      console.log(data);
     } catch (error) {
       console.error("Error updating student score on server:", error);
     }
@@ -122,11 +124,11 @@ const Exam = () => {
     async (studentId) => {
       try {
         const { data } = await axios.get(
-          `${apiUrl}/api/students/check-score-exists/${studentId}/${examId}`
+          `${apiUrl}/api/students/check-score-exists/${studentId}/${examId}`,
         );
         if (data.scoreExists) {
           setAlertMessage(
-            "You have already submitted this exam. Please wait until the next exam."
+            "You have already submitted this exam. Please wait until the next exam.",
           );
           setOpenAlert(true);
           setRedirectAfterAlert(true);
@@ -136,7 +138,7 @@ const Exam = () => {
         console.error(getError(error));
       }
     },
-    [examId]
+    [examId],
   );
 
   useEffect(() => {
@@ -169,7 +171,7 @@ const Exam = () => {
         <Spinner size="5rem" />
       </h1>
     );
-  console.log(exams);
+
   return (
     <>
       {openDialog && (
@@ -189,11 +191,11 @@ const Exam = () => {
             {exams.map((exam) => (
               <option
                 className={
-                  loggedInStudent?.name === "admin"
+                  loggedInStudent?.role === "ADMIN"
                     ? ""
                     : loggedInStudent?.level !== exam.level
-                    ? "notInTheClass"
-                    : ""
+                      ? "notInTheClass"
+                      : ""
                 }
                 key={exam.id}
                 value={exam.id}

@@ -318,6 +318,18 @@ journalRoute.post(
           });
         }
       }
+      if (original.source === "DONATION") {
+        const donation = await tx.donation.findFirst({
+          where: { journalEntryId: original.id },
+        });
+
+        if (donation) {
+          await tx.donation.update({
+            where: { id: donation.id },
+            data: { journalEntryId: null },
+          });
+        }
+      }
 
       if (original.source === "LOAN") {
         const loan = await tx.loan.findFirst({

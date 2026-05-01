@@ -127,8 +127,31 @@ superAdminRoute.delete(
   expressAsyncHandler(async (req, res) => {
     const { id } = req.params;
 
-    // Delete in correct order (children before parents)
     await prisma.auditLog.deleteMany({ where: { schoolId: id } });
+
+    // Nullify all journalEntryId foreign keys BEFORE deleting journal entries
+    await prisma.donation.updateMany({
+      where: { schoolId: id },
+      data: { journalEntryId: null },
+    });
+    await prisma.feePayment.updateMany({
+      where: { schoolId: id },
+      data: { journalEntryId: null },
+    });
+    await prisma.expense.updateMany({
+      where: { schoolId: id },
+      data: { journalEntryId: null },
+    });
+    await prisma.loan.updateMany({
+      where: { schoolId: id },
+      data: { journalEntryId: null, repaymentJournalEntryId: null },
+    });
+    await prisma.loanRepayment.updateMany({
+      where: { schoolId: id },
+      data: { journalEntryId: null },
+    });
+
+    // Now safe to delete journal data
     await prisma.journalLine.deleteMany({
       where: { JournalEntry: { schoolId: id } },
     });
@@ -137,6 +160,8 @@ superAdminRoute.delete(
       data: { reversalOfId: null },
     });
     await prisma.journalEntry.deleteMany({ where: { schoolId: id } });
+
+    // Now delete the rest
     await prisma.feePayment.deleteMany({ where: { schoolId: id } });
     await prisma.studentFee.deleteMany({ where: { schoolId: id } });
     await prisma.feeStructure.deleteMany({ where: { schoolId: id } });
