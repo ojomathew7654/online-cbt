@@ -34,7 +34,7 @@ reportsRoute.get(
       where: {
         accountId,
         JournalEntry: {
-          status: "POSTED",
+          // status: "POSTED",
           sessionId,
           schoolId,
         },
@@ -93,7 +93,7 @@ reportsRoute.get(
       include: {
         journalLines: {
           where: {
-            JournalEntry: { status: "POSTED", sessionId, schoolId },
+            JournalEntry: { sessionId, schoolId },
           },
         },
       },
@@ -146,7 +146,6 @@ reportsRoute.get(
 );
 
 // ─── Balance Sheet ─────────────────────────────────────────────────────────
-// Groups accounts into: Assets | Liabilities | Equity
 reportsRoute.get(
   "/balance-sheet/:schoolId",
   protect,
@@ -164,7 +163,7 @@ reportsRoute.get(
       include: {
         journalLines: {
           where: {
-            JournalEntry: { status: "POSTED", sessionId, schoolId },
+            JournalEntry: { sessionId, schoolId },
           },
         },
       },
@@ -222,7 +221,6 @@ reportsRoute.get(
 );
 
 // ─── Income Statement (P&L) ────────────────────────────────────────────────
-// Revenue − Expenses = Net Profit / Loss
 reportsRoute.get(
   "/income-statement/:schoolId",
   protect,

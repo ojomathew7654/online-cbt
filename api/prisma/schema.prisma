@@ -7,18 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  SUPER_ADMIN
-  ADMIN
-  USER
-}
-
-enum TermType {
-  FIRST
-  SECOND
-  THIRD
-}
-
 // ─────────────────────────────────────────────
 // EXISTING MODELS (unchanged)
 // ─────────────────────────────────────────────
@@ -257,11 +245,11 @@ model Donation {
   revenueAccountId String         @db.ObjectId
   RevenueAccount   ChartOfAccount @relation("DonationRevenueAccount", fields: [revenueAccountId], references: [id])
 
-  cashAccountId String         @db.ObjectId
-  CashAccount   ChartOfAccount @relation("CashAccountDonation", fields: [cashAccountId], references: [id])
-
-  journalEntryId String?       @db.ObjectId
-  JournalEntry   JournalEntry? @relation("DonationJournalEntry", fields: [journalEntryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  cashAccountId  String         @db.ObjectId
+  CashAccount    ChartOfAccount @relation("CashAccountDonation", fields: [cashAccountId], references: [id])
+  status         DonationStatus @default(POSTED)
+  journalEntryId String?        @db.ObjectId
+  JournalEntry   JournalEntry?  @relation("DonationJournalEntry", fields: [journalEntryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   schoolId String @db.ObjectId
   School   School @relation(fields: [schoolId], references: [id])
@@ -517,6 +505,11 @@ enum LoanStatus {
   REVERSED
 }
 
+enum DonationStatus {
+  POSTED
+  REVERSED
+}
+
 enum JournalSource {
   MANUAL
   SYSTEM
@@ -531,6 +524,18 @@ enum FeeStatus {
   UNPAID
   PARTIALLY_PAID
   PAID
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  USER
+}
+
+enum TermType {
+  FIRST
+  SECOND
+  THIRD
 }
 
 enum PaymentMethod {

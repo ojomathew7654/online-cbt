@@ -138,7 +138,6 @@ otherTransactionsRoute.get(
       where: {
         schoolId,
         source: "MANUAL",
-        status: "POSTED",
         ...(sessionId ? { sessionId } : {}),
       },
       include: {

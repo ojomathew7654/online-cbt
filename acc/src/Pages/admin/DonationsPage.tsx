@@ -72,9 +72,7 @@ export default function DonationsPage() {
   }, [schoolId, currentSessionId]);
 
   const getDonationStatus = (d: any) => {
-    if (!d.journalEntryId) return "REVERSED";
-    if (d.JournalEntry?.status === "POSTED") return "POSTED";
-    return "UNKNOWN";
+    return d.status;
   };
 
   const handleRecord = async () => {
@@ -113,7 +111,7 @@ export default function DonationsPage() {
       setSaving(false);
     }
   };
-  console.log(donations);
+
   return (
     <div className="p-4 sm:p-6 animate-fade-in">
       <PageHeader

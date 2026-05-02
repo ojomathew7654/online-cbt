@@ -67,7 +67,7 @@ export default function JournalPage() {
   useEffect(() => {
     load();
   }, [schoolId, currentSessionId]);
-  console.log(entries);
+
   const filtered = entries.filter((e) => {
     const matchStatus = statusFilter === "ALL" || e.status === statusFilter;
     const matchSearch =
@@ -178,13 +178,18 @@ export default function JournalPage() {
     }
   };
 
+  const [loadingEntryId, setLoadingEntryId] = useState<string | null>(null);
+
   const openView = async (id: string) => {
     try {
+      setLoadingEntryId(id);
       const res = await journalApi.getOne(id);
       setSelected(res.data);
       setModal("view");
     } catch (e) {
       toast.error(getErrorMessage(e));
+    } finally {
+      setLoadingEntryId(null);
     }
   };
 
@@ -240,7 +245,7 @@ export default function JournalPage() {
               {filtered.map((e) => {
                 const statusVar = journalStatusColor[e.status] as any;
                 return (
-                  <Tr key={e.id} clickable onClick={() => openView(e.id)}>
+                  <Tr key={e.id}>
                     <Td>
                       <span className="font-mono text-[12px] sm:text-[13px] text-(--color-primary)">
                         {e.entryNumber}
@@ -250,7 +255,7 @@ export default function JournalPage() {
                       {fmt.date(e.date)}
                     </Td>
                     <Td>
-                      <p className="m-0 font-medium text-white truncate max-w-[140px] sm:max-w-[280px]">
+                      <p className="m-0 font-medium text-white truncate max-w-35 sm:max-w-70">
                         {e.description}
                       </p>
                     </Td>
@@ -274,15 +279,18 @@ export default function JournalPage() {
                       </Badge>
                     </Td>
                     <Td>
-                      <div
-                        className="flex items-center gap-1.5 sm:gap-2"
-                        onClick={(ev) => ev.stopPropagation()}
-                      >
+                      <div className="flex items-center gap-1.5 sm:gap-2">
                         <Button
                           variant="ghost"
                           size="icon"
-                          leftIcon={<Eye size={14} />}
+                          loading={loadingEntryId === e.id}
+                          leftIcon={
+                            loadingEntryId === e.id ? undefined : (
+                              <Eye size={14} />
+                            )
+                          }
                           onClick={() => openView(e.id)}
+                          disabled={loadingEntryId === e.id}
                         />
                         {e.status === "DRAFT" && (
                           <Button

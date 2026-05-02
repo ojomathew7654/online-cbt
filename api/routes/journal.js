@@ -167,7 +167,6 @@ journalRoute.put(
 );
 
 // ─── Reverse a Posted Journal Entry ───────────────────────────────────────
-// Creates a new entry with all debits/credits flipped
 journalRoute.post(
   "/:id/reverse",
   protect,
@@ -318,6 +317,7 @@ journalRoute.post(
           });
         }
       }
+
       if (original.source === "DONATION") {
         const donation = await tx.donation.findFirst({
           where: { journalEntryId: original.id },
@@ -326,7 +326,10 @@ journalRoute.post(
         if (donation) {
           await tx.donation.update({
             where: { id: donation.id },
-            data: { journalEntryId: null },
+            data: {
+              status: "REVERSED",
+              journalEntryId: null,
+            },
           });
         }
       }
