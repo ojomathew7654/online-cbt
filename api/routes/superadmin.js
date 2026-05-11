@@ -182,7 +182,79 @@ superAdminRoute.delete(
   }),
 );
 
+// superAdminRoute.delete(
+//   "/schools/:id",
+//   protect,
+//   requireRole("SUPER_ADMIN"),
+//   expressAsyncHandler(async (req, res) => {
+//     const { id } = req.params;
+
+//     // 1. Audit logs
+//     await prisma.auditLog.deleteMany({ where: { schoolId: id } });
+
+//     // 2. Nullify journal FK references before deleting journal entries
+//     await prisma.donation.updateMany({
+//       where: { schoolId: id },
+//       data: { journalEntryId: null },
+//     });
+//     await prisma.feePayment.updateMany({
+//       where: { schoolId: id },
+//       data: { journalEntryId: null },
+//     });
+//     await prisma.expense.updateMany({
+//       where: { schoolId: id },
+//       data: { journalEntryId: null },
+//     });
+//     await prisma.loan.updateMany({
+//       where: { schoolId: id },
+//       data: { journalEntryId: null, repaymentJournalEntryId: null },
+//     });
+//     await prisma.loanRepayment.updateMany({
+//       where: { schoolId: id },
+//       data: { journalEntryId: null },
+//     });
+
+//     // 3. Delete journal data
+//     await prisma.journalLine.deleteMany({
+//       where: { JournalEntry: { schoolId: id } },
+//     });
+//     await prisma.journalEntry.updateMany({
+//       where: { schoolId: id },
+//       data: { reversalOfId: null },
+//     });
+//     await prisma.journalEntry.deleteMany({ where: { schoolId: id } });
+
+//     // 4. Delete all payment & fee records
+//     await prisma.feePayment.deleteMany({ where: { schoolId: id } });
+//     await prisma.studentFee.deleteMany({ where: { schoolId: id } });
+//     await prisma.feeStructure.deleteMany({ where: { schoolId: id } });
+
+//     // 5. Delete financial records
+//     await prisma.expense.deleteMany({ where: { schoolId: id } });
+//     await prisma.donation.deleteMany({ where: { schoolId: id } });
+//     await prisma.loanRepayment.deleteMany({ where: { schoolId: id } });
+//     await prisma.loan.deleteMany({ where: { schoolId: id } });
+
+//     // 6. Delete accounting structure
+//     await prisma.academicSession.deleteMany({ where: { schoolId: id } });
+//     await prisma.chartOfAccount.deleteMany({ where: { schoolId: id } });
+
+//     // 7. Delete exam-related data (answers reference students, so delete answers first)
+//     await prisma.answer.deleteMany({ where: { schoolId: id } });
+//     await prisma.exam.deleteMany({ where: { schoolId: id } });
+//     await prisma.subject.deleteMany({ where: { schoolId: id } });
+
+//     // 8. Delete users (staff) but NOT students
+//     // await prisma.user.deleteMany({ where: { schoolId: id } });
+
+//     // ✅ Students are intentionally left intact
+
+//     res.json({ message: "School data reset. Students have been preserved." });
+//   }),
+// );
+
 // ─── Update User ───────────────────────────────────────────────────────────
+
 superAdminRoute.put(
   "/users/:id",
   protect,

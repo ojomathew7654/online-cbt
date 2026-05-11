@@ -16,14 +16,14 @@ const Subject = () => {
   const [updatedName, setUpdatedName] = useState("");
 
   const schoolId = JSON.parse(
-    localStorage.getItem("loggedInStudent")
+    localStorage.getItem("loggedInStudent"),
   )?.schoolId;
 
   const [visibilityChanges, setVisibilityChanges] = useState(
     exam?.reduce((acc, ex) => {
       acc[ex.id] = ex.visible;
       return acc;
-    }, {})
+    }, {}),
   );
 
   const [durationChanges, setDurationChanges] = useState({});
@@ -53,7 +53,7 @@ const Subject = () => {
     async function fetchSubjects() {
       try {
         const { data } = await axios.get(
-          `${apiUrl}/api/subjects/subjects/${schoolId}`
+          `${apiUrl}/api/subjects/subjects/${schoolId}`,
         );
         setSubjects(data);
       } catch (error) {
@@ -78,7 +78,7 @@ const Subject = () => {
       alert("Subject created successfully");
       subjectRef.current.value = "";
       const { data } = await axios.get(
-        `${apiUrl}/api/subjects/subjects/${schoolId}`
+        `${apiUrl}/api/subjects/subjects/${schoolId}`,
       );
       setSubjects(data);
     } catch (error) {
@@ -102,7 +102,7 @@ const Subject = () => {
             termType: selectedTerm,
             schoolId,
           },
-        }
+        },
       );
       setExam(data);
       const initialVisibility = {};
@@ -187,7 +187,7 @@ const Subject = () => {
         name: updatedName,
       });
       const { data } = await axios.get(
-        `${apiUrl}/api/subjects/subjects/${schoolId}`
+        `${apiUrl}/api/subjects/subjects/${schoolId}`,
       );
       setSubjects(data);
       alert("Subject updated successfully!");
@@ -280,6 +280,7 @@ const Subject = () => {
                   <option disabled value="">
                     Select Time Duration
                   </option>
+                  <option value={20 * 60}>20 minutes</option>
                   <option value={25 * 60}>25 minutes</option>
                   <option value={30 * 60}>30 minutes</option>
                   <option value={40 * 60}>40 minutes</option>
