@@ -107,12 +107,18 @@ const QuestionComponent = ({
   }, [exam]);
 
   useEffect(() => {
-    if (remainingTime === 480 && !alertShown) {
+    if (remainingTime === 300 && !alertShown) {
       setAlertShown(true);
-      setAlertMessage("You have just 8 minutes left!!!");
+      setAlertMessage("You have just 5 minutes left!!!");
       setOpenAlert(true);
     }
   }, [remainingTime, alertShown]);
+
+  useEffect(() => {
+    if (remainingTime === 0) {
+      handleSubmit();
+    }
+  }, [remainingTime, handleSubmit]);
 
   const formatTime = (timeInSeconds) => {
     const hours = Math.floor(timeInSeconds / 3600);
