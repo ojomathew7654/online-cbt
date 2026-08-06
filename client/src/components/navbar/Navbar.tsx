@@ -4,6 +4,7 @@ import {
   FaClipboardCheck,
   FaFileImport,
   FaPowerOff,
+  FaQuestion,
 } from "react-icons/fa";
 import { FcClock } from "react-icons/fc";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -11,7 +12,7 @@ import { FaPersonCircleQuestion } from "react-icons/fa6";
 import { PiUsersFourThin } from "react-icons/pi";
 import { IoPersonAddSharp } from "react-icons/io5";
 import { IoIosCheckmarkCircle } from "react-icons/io";
-import Dialog from "../others/Dialog"; // Adjust the path as needed
+import Dialog from "../ui/Dialog"; // Adjust the path as needed
 
 import "./Navbar.css";
 import { MdAdminPanelSettings } from "react-icons/md";
@@ -35,10 +36,15 @@ const Navbar = () => {
   };
 
   const links = [
+    // {
+    //   icon: <IoPersonAddSharp fontSize={25} />,
+    //   name: "Register",
+    //   route: "/register",
+    // },
     {
-      icon: <IoPersonAddSharp fontSize={25} />,
-      name: "Register",
-      route: "/register",
+      icon: <FaQuestion fontSize={25} />,
+      name: "MaQues",
+      route: "/manual-question",
     },
     // { icon: <CgLogIn fontSize={25} />, name: "Login", route: "/login" },
     { icon: <FcClock fontSize={25} />, name: "Exam", route: "/exam" },

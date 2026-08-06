@@ -1,54 +1,128 @@
-@import url("https://fonts.googleapis.com/css2?family=Borel&family=Encode+Sans+Expanded:wght@100;200;300;400;500;600;700;800;900&display=swap");
-* {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  text-decoration: none;
-  outline: none;
-  box-sizing: border-box;
-}
+@import "tailwindcss";
 
-:root {
+@theme {
+  --font-display: "Inter", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
   --color-bg: #1f1f38;
   --color-bg-deep: #2c2c6c;
   --color-primary: #4db5ff;
   --color-primary-variant: rgba(77, 181, 255, 0.4);
+
   --color-white: #fff;
   --color-light: rgba(255, 255, 255, 0.6);
-  --transition: all 400ms ease;
-  --container-width-sm: 90%;
-  --font-family: "Encode Sans Expanded", sans-serif;
+
+  --color-success: #22c55e;
+  --color-success-variant: rgba(34, 197, 94, 0.2);
+
+  --color-danger: #ef4444;
+  --color-danger-variant: rgba(239, 68, 68, 0.2);
+
+  --color-warning: #f59e0b;
+  --color-warning-variant: rgba(245, 158, 11, 0.2);
+
+  --color-border: rgba(255, 255, 255, 0.1);
+
+  --color-info: var(--color-primary);
+  --color-info-variant: var(--color-primary-variant);
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
 }
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 html {
+  height: 100%;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   scroll-behavior: smooth;
+}
+
+body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background-color: var(--color-bg);
+  color: var(--color-white);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+}
+
+/* Standard property - works in Firefox, and modern Chrome/Edge */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-primary-variant) var(--color-bg-deep);
+}
+
+/* WebKit-based browsers (Chrome, Safari, Edge, Opera) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg-deep);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-primary-variant);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary);
+}
+
+::selection {
+  background: var(--color-primary-variant);
+  color: var(--color-white);
 }
 button {
   cursor: pointer;
 }
-/* ::-webkit-scrollbar {
-  display: none;
-} */
-body {
-  font-family: "Poppins", sans-serif;
-  background-color: var(--color-bg);
-  color: var(--color-white);
-  line-height: 1.7;
-}
-h1,
-h2,
-h3,
-h4,
-h5 {
-  font-weight: 500;
-}
-.disable {
+
+button:disabled {
   cursor: not-allowed;
-  background-color: var(--color-bg);
-  color: white;
 }
-.loadindH1 {
-  background-color: var(--color-primary);
-  text-align: center;
-  color: black;
-  /* height: 100vh; */
+math-field {
+  --caret-color: var(--color-primary);
+  --selection-background-color: rgba(77, 181, 255, 0.25);
+  --smart-fence-color: white;
+
+  color: white;
+  background: transparent;
+  border: none;
+}
+
+math-field:focus {
+  outline: none;
+}
+
+math-field[read-only] {
+  color: white;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  pointer-events: none;
 }

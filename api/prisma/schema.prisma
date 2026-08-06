@@ -48,8 +48,12 @@ model User {
   name     String?
   gender   String?
   role     Role    @default(USER)
+
   schoolId String? @db.ObjectId
   School   School? @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  // Exams assigned to this user
+  userExams UserExam[]
 
   // Accounting relations
   journalEntries      JournalEntry[]
@@ -57,6 +61,20 @@ model User {
   auditLogs           AuditLog[]
   feePaymentsRecorded FeePayment[]
   loanRepayments      LoanRepayment[] @relation("LoanRepayments")
+}
+
+model UserExam {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  userId String @db.ObjectId
+  examId String @db.ObjectId
+
+  User User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Exam Exam @relation(fields: [examId], references: [id], onDelete: Cascade)
+
+  assignedAt DateTime @default(now())
+
+  @@unique([userId, examId])
 }
 
 model Student {
@@ -97,15 +115,18 @@ model Exam {
   schoolId     String     @db.ObjectId
   School       School     @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   answers      Answer[]   @relation("ExamToAnswers")
+  // Teachers/users assigned to this exam
+  userExams    UserExam[]
 }
 
 model Question {
-  id            String   @id @default(auto()) @map("_id") @db.ObjectId
-  question      String
-  options       String[]
-  correctAnswer String
-  examId        String   @db.ObjectId
-  Exam          Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  question       String
+  options        String[]
+  correctAnswer  String
+  examId         String   @db.ObjectId
+  Exam           Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  imagePublicIds String[]
 }
 
 model Answer {

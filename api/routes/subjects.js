@@ -41,7 +41,7 @@ subjectRoute.post(
         error: err.message,
       });
     }
-  })
+  }),
 );
 
 // Get All Subjects
@@ -50,19 +50,23 @@ subjectRoute.get(
   expressAsyncHandler(async (req, res) => {
     try {
       const { schoolId } = req.params;
+
       const subjects = await prisma.subject.findMany({
-        where: { schoolId },
+        where: {
+          schoolId,
+        },
       });
-      if (!subjects || subjects.length === 0) {
-        return res
-          .status(404)
-          .json({ message: "No subjects found for this school." });
-      }
+
       res.status(200).json(subjects);
     } catch (err) {
-      res.status(500).json({ message: err.message });
+      console.error("Error fetching subjects:", err);
+
+      res.status(500).json({
+        message: "Failed to fetch subjects",
+        error: err.message,
+      });
     }
-  })
+  }),
 );
 
 // Update Subjects by id
@@ -93,7 +97,7 @@ subjectRoute.put(
       // Handle cases where the ID is invalid or Prisma fails
       res.status(500).json({ message: err.message });
     }
-  })
+  }),
 );
 
 export { subjectRoute };

@@ -92,25 +92,339 @@ userRoute.post(
   "/create-user",
   expressAsyncHandler(async (req, res) => {
     try {
+      const { username, password, name, gender, role, schoolId } = req.body;
+
+      if (!username || !password) {
+        return res.status(400).json({
+          message: "Username and password are required",
+        });
+      }
+
       const userAlreadyExist = await prisma.user.findFirst({
-        where: { username: req.body.username },
+        where: {
+          username,
+        },
       });
 
       if (userAlreadyExist) {
-        res.status(409).send({
-          message: `User with the name '${req.body.username}' already exists`,
+        return res.status(409).json({
+          message: `User with the username '${username}' already exists`,
         });
-        return;
       }
+
       const newUser = await prisma.user.create({
-        data: req.body,
+        data: {
+          username,
+          password,
+          name: name || null,
+          gender: gender || null,
+          role: role || "USER",
+          schoolId: schoolId || null,
+        },
+        select: {
+          id: true,
+          username: true,
+          name: true,
+          gender: true,
+          role: true,
+          schoolId: true,
+        },
       });
 
-      res.status(200).json(newUser);
+      res.status(201).json(newUser);
     } catch (err) {
-      res
-        .status(500)
-        .json({ message: "An error occurred", error: err.message });
+      console.error("Error creating user:", err);
+
+      res.status(500).json({
+        message: "An error occurred while creating user",
+        error: err.message,
+      });
+    }
+  }),
+);
+
+// Get users belonging to a school
+userRoute.get(
+  "/school/:schoolId/users",
+  expressAsyncHandler(async (req, res) => {
+    const { schoolId } = req.params;
+
+    try {
+      const users = await prisma.user.findMany({
+        where: {
+          schoolId,
+        },
+        select: {
+          id: true,
+          username: true,
+          name: true,
+          gender: true,
+          role: true,
+          schoolId: true,
+        },
+        orderBy: {
+          name: "asc",
+        },
+      });
+
+      res.status(200).json(users);
+    } catch (err) {
+      console.error("Error fetching users:", err);
+
+      res.status(500).json({
+        message: "Failed to fetch users",
+        error: err.message,
+      });
+    }
+  }),
+);
+
+// Get user by ID
+userRoute.get(
+  "/:id",
+  expressAsyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    try {
+      const user = await prisma.user.findUnique({
+        where: {
+          id,
+        },
+        select: {
+          id: true,
+          username: true,
+          name: true,
+          gender: true,
+          role: true,
+          schoolId: true,
+        },
+      });
+
+      if (!user) {
+        return res.status(404).json({
+          message: "User not found",
+        });
+      }
+
+      res.status(200).json(user);
+    } catch (err) {
+      console.error("Error fetching user:", err);
+
+      res.status(500).json({
+        message: "Failed to fetch user",
+        error: err.message,
+      });
+    }
+  }),
+);
+
+// Update user
+userRoute.put(
+  "/:id",
+  expressAsyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    try {
+      const existingUser = await prisma.user.findUnique({
+        where: {
+          id,
+        },
+      });
+
+      if (!existingUser) {
+        return res.status(404).json({
+          message: "User not found",
+        });
+      }
+
+      const { username, password, name, gender, role } = req.body;
+
+      if (username && username !== existingUser.username) {
+        const usernameExists = await prisma.user.findFirst({
+          where: {
+            username,
+            NOT: {
+              id,
+            },
+          },
+        });
+
+        if (usernameExists) {
+          return res.status(409).json({
+            message: `User with the username '${username}' already exists`,
+          });
+        }
+      }
+
+      const updateData = {
+        username,
+        name: name || null,
+        gender: gender || null,
+        role,
+      };
+
+      // Only update password when a new password was provided
+      if (password && password.trim() !== "") {
+        updateData.password = password;
+      }
+
+      const updatedUser = await prisma.user.update({
+        where: {
+          id,
+        },
+        data: updateData,
+        select: {
+          id: true,
+          username: true,
+          name: true,
+          gender: true,
+          role: true,
+          schoolId: true,
+        },
+      });
+
+      res.status(200).json(updatedUser);
+    } catch (err) {
+      console.error("Error updating user:", err);
+
+      res.status(500).json({
+        message: "Failed to update user",
+        error: err.message,
+      });
+    }
+  }),
+);
+
+// Delete user
+userRoute.delete(
+  "/:id",
+  expressAsyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    try {
+      const existingUser = await prisma.user.findUnique({
+        where: {
+          id,
+        },
+      });
+
+      if (!existingUser) {
+        return res.status(404).json({
+          message: "User not found",
+        });
+      }
+
+      await prisma.user.delete({
+        where: {
+          id,
+        },
+      });
+
+      res.status(200).json({
+        message: "User deleted successfully",
+      });
+    } catch (err) {
+      console.error("Error deleting user:", err);
+
+      res.status(500).json({
+        message: "Failed to delete user",
+        error: err.message,
+      });
+    }
+  }),
+);
+
+// admin/dashboard
+userRoute.get(
+  "/admin/dashboard/:schoolId",
+  expressAsyncHandler(async (req, res) => {
+    try {
+      const { schoolId } = req.params;
+
+      if (!schoolId) {
+        return res.status(400).json({
+          message: "School ID is required.",
+        });
+      }
+
+      // Make sure the school exists
+      const school = await prisma.school.findUnique({
+        where: {
+          id: schoolId,
+        },
+        select: {
+          id: true,
+          name: true,
+          viewExamHistory: true,
+        },
+      });
+
+      if (!school) {
+        return res.status(404).json({
+          message: "School not found.",
+        });
+      }
+
+      // Get all counts belonging to this school
+      const [totalStudents, totalSubjects, totalExams, students] =
+        await Promise.all([
+          prisma.student.count({
+            where: {
+              schoolId,
+            },
+          }),
+
+          prisma.subject.count({
+            where: {
+              schoolId,
+            },
+          }),
+
+          prisma.exam.count({
+            where: {
+              schoolId,
+            },
+          }),
+
+          prisma.student.findMany({
+            where: {
+              schoolId,
+            },
+            select: {
+              id: true,
+            },
+          }),
+        ]);
+
+      // Count all answer/exam-history records belonging
+      // to students in this school.
+      const studentIds = students.map((student) => student.id);
+
+      const examHistoryCount =
+        studentIds.length === 0
+          ? 0
+          : await prisma.answer.count({
+              where: {
+                studentId: {
+                  in: studentIds,
+                },
+              },
+            });
+
+      res.status(200).json({
+        totalStudents,
+        totalSubjects,
+        totalExams,
+        examHistoryCount,
+        viewExamHistory: school.viewExamHistory,
+      });
+    } catch (error) {
+      console.error("Admin dashboard error:", error);
+
+      res.status(500).json({
+        message: "Failed to fetch admin dashboard data.",
+        error: error.message,
+      });
     }
   }),
 );

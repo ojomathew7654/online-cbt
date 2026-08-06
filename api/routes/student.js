@@ -197,6 +197,7 @@ import prisma from "../prisma/prisma.js";
 // );
 
 //create-student
+
 studentRoute.post(
   "/create-student",
   expressAsyncHandler(async (req, res) => {
@@ -228,7 +229,7 @@ studentRoute.post(
     } catch (err) {
       res.status(500).json({ message: err.message });
     }
-  })
+  }),
 );
 //create-answer
 studentRoute.post(
@@ -251,7 +252,7 @@ studentRoute.post(
       }
       const validQuestionIds = examExists.questions.map((q) => q.id);
       const invalidAnswers = answers.filter(
-        (answer) => !validQuestionIds.includes(answer.questionId)
+        (answer) => !validQuestionIds.includes(answer.questionId),
       );
       if (invalidAnswers.length > 0) {
         return res.status(400).json({
@@ -272,7 +273,239 @@ studentRoute.post(
     } catch (err) {
       res.status(500).json({ message: err.message });
     }
-  })
+  }),
+);
+
+// STUDENT DASHBOARD
+studentRoute.get(
+  "/dashboard/:studentId",
+  expressAsyncHandler(async (req, res) => {
+    try {
+      const { studentId } = req.params;
+
+      // --------------------------------------------------------
+      // Get student
+      // --------------------------------------------------------
+
+      const student = await prisma.student.findUnique({
+        where: {
+          id: studentId,
+        },
+        select: {
+          id: true,
+          name: true,
+          surname: true,
+          username: true,
+          level: true,
+          schoolId: true,
+          subjects: true,
+
+          School: {
+            select: {
+              id: true,
+              name: true,
+              viewExamHistory: true,
+            },
+          },
+        },
+      });
+
+      if (!student) {
+        return res.status(404).json({
+          message: "Student not found",
+        });
+      }
+
+      // --------------------------------------------------------
+      // Get all visible exams for the student's school
+      // --------------------------------------------------------
+
+      const exams = await prisma.exam.findMany({
+        where: {
+          schoolId: student.schoolId,
+          visible: true,
+        },
+        orderBy: {
+          id: "desc",
+        },
+        include: {
+          Subject: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+
+          questions: {
+            select: {
+              id: true,
+            },
+          },
+        },
+      });
+
+      // --------------------------------------------------------
+      // Get all answers submitted by this student
+      // --------------------------------------------------------
+
+      const answerRecords = await prisma.answer.findMany({
+        where: {
+          studentId,
+        },
+        include: {
+          Exam: {
+            include: {
+              Subject: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+
+              questions: {
+                select: {
+                  id: true,
+                  question: true,
+                  correctAnswer: true,
+                  options: true,
+                  imagePublicIds: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      // --------------------------------------------------------
+      // Determine completed exams
+      // --------------------------------------------------------
+
+      const completedExamIds = answerRecords.map(
+        (answerRecord) => answerRecord.examId,
+      );
+
+      // Remove duplicate exam IDs
+      const uniqueCompletedExamIds = [...new Set(completedExamIds)];
+
+      // --------------------------------------------------------
+      // Format student answers
+      // --------------------------------------------------------
+
+      const studentAnswers = answerRecords.map((answerRecord) => {
+        let parsedAnswers = answerRecord.answers;
+
+        /*
+         * Prisma Json fields are normally already returned
+         * as JavaScript values.
+         *
+         * But this also handles the case where old records
+         * contain JSON as a string.
+         */
+        if (typeof parsedAnswers === "string") {
+          try {
+            parsedAnswers = JSON.parse(parsedAnswers);
+          } catch {
+            parsedAnswers = [];
+          }
+        }
+
+        if (!Array.isArray(parsedAnswers)) {
+          parsedAnswers = [];
+        }
+
+        const questionsAndAnswers = parsedAnswers.map((item) => {
+          const question = answerRecord.Exam.questions.find(
+            (q) => q.id === item.questionId,
+          );
+
+          return {
+            questionId: item.questionId,
+
+            question: question?.question || "Question not found",
+
+            selectedOption: item.selectedOption ?? null,
+
+            correctAnswer: question?.correctAnswer ?? null,
+          };
+        });
+
+        return {
+          answerId: answerRecord.id,
+
+          examId: answerRecord.examId,
+
+          examName: answerRecord.Exam.Subject?.name || "Unknown Subject",
+
+          subjectId: answerRecord.Exam.Subject?.id || null,
+
+          level: answerRecord.Exam.level,
+
+          termType: answerRecord.Exam.termType,
+
+          questionsAndAnswers,
+        };
+      });
+
+      // --------------------------------------------------------
+      // Format exams for frontend
+      // --------------------------------------------------------
+
+      const formattedExams = exams.map((exam) => ({
+        id: exam.id,
+
+        visible: exam.visible,
+
+        examDuration: exam.examDuration,
+
+        termType: exam.termType,
+
+        level: exam.level,
+
+        subjectId: exam.subjectId,
+
+        subjectName: exam.Subject?.name || "Unknown Subject",
+
+        questionCount: exam.questions.length,
+      }));
+
+      // --------------------------------------------------------
+      // Response
+      // --------------------------------------------------------
+
+      return res.status(200).json({
+        student: {
+          id: student.id,
+          name: student.name,
+          surname: student.surname,
+          username: student.username,
+          level: student.level,
+          schoolId: student.schoolId,
+          subjects: student.subjects,
+        },
+
+        school: student.School
+          ? {
+              id: student.School.id,
+              name: student.School.name,
+              viewExamHistory: Boolean(student.School.viewExamHistory),
+            }
+          : null,
+
+        exams: formattedExams,
+
+        completedExamIds: uniqueCompletedExamIds,
+
+        answers: studentAnswers,
+      });
+    } catch (err) {
+      console.error("Student dashboard error:", err);
+
+      return res.status(500).json({
+        message: "Failed to load student dashboard",
+        error: err.message,
+      });
+    }
+  }),
 );
 
 //delete-answer
@@ -305,7 +538,7 @@ studentRoute.delete(
     } catch (err) {
       res.status(500).json({ message: err.message });
     }
-  })
+  }),
 );
 
 //Get answer by studentId
@@ -337,7 +570,7 @@ studentRoute.get(
         const questionsAndAnswers = parsedAnswers.map((item) => {
           // Find the corresponding question
           const question = answerRecord.Exam.questions.find(
-            (q) => q.id === item.questionId
+            (q) => q.id === item.questionId,
           );
           return {
             question: question?.question || "Question not found",
@@ -364,7 +597,7 @@ studentRoute.get(
         .status(500)
         .json({ message: "An error occurred", error: err.message });
     }
-  })
+  }),
 );
 
 //check-score-exists
@@ -390,7 +623,7 @@ studentRoute.get(
     } catch (err) {
       res.status(500).json({ message: err.message });
     }
-  })
+  }),
 );
 
 //login-student
@@ -425,7 +658,7 @@ studentRoute.post(
     } catch (err) {
       res.status(500).json({ message: err.message });
     }
-  })
+  }),
 );
 
 //get-students-by-level
@@ -450,7 +683,7 @@ studentRoute.get(
       console.error("Error fetching students:", err.message);
       res.status(500).json({ message: err.message });
     }
-  })
+  }),
 );
 
 //Delete student
@@ -466,7 +699,7 @@ studentRoute.delete(
     } catch (err) {
       res.status(500).json({ message: err.message });
     }
-  })
+  }),
 );
 
 //Get studentbyId
@@ -491,7 +724,7 @@ studentRoute.get(
         error: err.message,
       });
     }
-  })
+  }),
 );
 
 //Update student data
@@ -519,7 +752,7 @@ studentRoute.patch(
         error: err.message,
       });
     }
-  })
+  }),
 );
 
 //Update student exam score
@@ -558,7 +791,7 @@ studentRoute.put(
     } catch (err) {
       res.status(500).json({ message: err.message });
     }
-  })
+  }),
 );
 
 studentRoute.delete(
@@ -599,7 +832,7 @@ studentRoute.delete(
     } catch (err) {
       res.status(500).json({ message: err.message });
     }
-  })
+  }),
 );
 
 //get students-with-exam
@@ -651,7 +884,7 @@ studentRoute.get(
     } catch (err) {
       res.status(500).json({ message: err.message });
     }
-  })
+  }),
 );
 
 export { studentRoute };
