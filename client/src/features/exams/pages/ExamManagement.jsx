@@ -453,25 +453,103 @@ const ExamManagement = () => {
             HEADER
         ====================================================== */}
 
+        {/* =====================================================
+    HEADER
+====================================================== */}
+
         <div className="rounded-2xl border border-border bg-bg-deep p-5 shadow-xl sm:p-6">
-          <div className="flex items-start gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-              <FiSettings size={24} />
+          <div className="flex flex-col gap-6">
+            {/* HEADER CONTENT */}
+
+            <div className="flex items-start gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <FiSettings size={24} />
+              </div>
+
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-primary">
+                  Academic Administration
+                </p>
+
+                <h1 className="mt-1 text-2xl font-bold text-white sm:text-3xl">
+                  Exam Management
+                </h1>
+
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-light">
+                  Create subjects, configure examinations, manage visibility,
+                  and control examination duration.
+                </p>
+              </div>
             </div>
 
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-primary">
-                Academic Administration
-              </p>
+            {/* SUMMARY */}
 
-              <h1 className="mt-1 text-2xl font-bold text-white sm:text-3xl">
-                Exam Management
-              </h1>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              {/* TOTAL */}
 
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-light">
-                Create subjects, configure examinations, manage visibility, and
-                control examination duration.
-              </p>
+              <div className="rounded-xl border border-border bg-bg p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-light">
+                      Total
+                    </p>
+
+                    <p className="mt-2 text-2xl font-bold text-white">
+                      {exam.length + subjects.length}
+                    </p>
+
+                    <p className="mt-1 text-xs text-light">Exams + Subjects</p>
+                  </div>
+
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <FiSettings size={20} />
+                  </div>
+                </div>
+              </div>
+
+              {/* EXAMS */}
+
+              <div className="rounded-xl border border-border bg-bg p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-light">
+                      Exams
+                    </p>
+
+                    <p className="mt-2 text-2xl font-bold text-white">
+                      {exam.length}
+                    </p>
+
+                    <p className="mt-1 text-xs text-light">Currently loaded</p>
+                  </div>
+
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <FiBookOpen size={20} />
+                  </div>
+                </div>
+              </div>
+
+              {/* SUBJECTS */}
+
+              <div className="rounded-xl border border-border bg-bg p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-light">
+                      Subjects
+                    </p>
+
+                    <p className="mt-2 text-2xl font-bold text-white">
+                      {subjects.length}
+                    </p>
+
+                    <p className="mt-1 text-xs text-light">School subjects</p>
+                  </div>
+
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <FiBookOpen size={20} />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

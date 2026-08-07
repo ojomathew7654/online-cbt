@@ -196,8 +196,7 @@ import prisma from "../prisma/prisma.js";
 //   })
 // );
 
-//create-student
-
+// create-student"
 studentRoute.post(
   "/create-student",
   expressAsyncHandler(async (req, res) => {

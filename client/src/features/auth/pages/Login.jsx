@@ -51,64 +51,139 @@ const Login = () => {
     };
 
     try {
-      try {
-        const { data } = await axios.post(
-          `${apiUrl}/api/users/login-user`,
-          loginData,
-        );
-
-        const loggedInUser = {
-          ...data,
-          role: data.role || "USER",
-        };
-
-        localStorage.setItem("loggedInStudent", JSON.stringify(loggedInUser));
-
-        localStorage.setItem("isAdmin", "true");
-
-        if (loggedInUser.role === "ADMIN") {
-          navigate("/admin");
-        } else if (loggedInUser.role === "USER") {
-          navigate("/user");
-        } else {
-          localStorage.removeItem("loggedInStudent");
-          localStorage.removeItem("isAdmin");
-
-          setError("Invalid user role.");
-        }
-
-        return;
-      } catch (userError) {
-        console.log(
-          "User login failed, trying student login...",
-          getError(userError),
-        );
-      }
-
-      const { data: student } = await axios.post(
-        `${apiUrl}/api/students/login-student`,
+      const { data } = await axios.post(
+        `${apiUrl}/api/users/user-student-login`,
         loginData,
       );
 
-      const loggedInStudent = {
-        ...student,
-        role: "STUDENT",
-        token: student.token || null,
+      const loggedInUser = {
+        ...data,
+        role: data.role,
       };
 
-      localStorage.setItem("loggedInStudent", JSON.stringify(loggedInStudent));
+      localStorage.setItem("loggedInStudent", JSON.stringify(loggedInUser));
 
-      localStorage.setItem("isAdmin", "false");
+      if (data.role === "ADMIN") {
+        localStorage.setItem("isAdmin", "true");
+        navigate("/admin");
+      } else if (data.role === "USER") {
+        localStorage.setItem("isAdmin", "true");
+        navigate("/user");
+      } else if (data.role === "STUDENT") {
+        localStorage.setItem("isAdmin", "false");
+        navigate("/student");
+      } else {
+        localStorage.removeItem("loggedInStudent");
+        localStorage.removeItem("isAdmin");
 
-      navigate("/student");
-    } catch (studentError) {
-      console.error("Login failed:", studentError);
+        setError("Invalid user role.");
+      }
+    } catch (error) {
+      console.error("Login failed:", error);
 
-      setError(getError(studentError) || "Invalid username or password.");
+      // =========================================================
+      // SERVER RESPONDED WITH AN ERROR
+      // =========================================================
+
+      if (error.response) {
+        setError(
+          error.response.data?.message ||
+            "Unable to complete login. Please try again.",
+        );
+      }
+
+      // =========================================================
+      // REQUEST WAS SENT BUT NO RESPONSE WAS RECEIVED
+      // =========================================================
+      else if (error.request) {
+        setError(
+          "Unable to connect to the server. Please check your internet connection and try again.",
+        );
+      }
+
+      // =========================================================
+      // REQUEST COULD NOT BE CREATED
+      // =========================================================
+      else {
+        setError(
+          "Something went wrong while trying to log in. Please try again.",
+        );
+      }
     } finally {
       setLoading(false);
     }
   };
+
+  // const handleLogin = async (e) => {
+  //   e.preventDefault();
+
+  //   setLoading(true);
+  //   setError("");
+
+  //   const loginData = {
+  //     username: values.username,
+  //     password: values.password,
+  //   };
+
+  //   try {
+  //     try {
+  //       const { data } = await axios.post(
+  //         `${apiUrl}/api/users/login-user`,
+  //         loginData,
+  //       );
+
+  //       const loggedInUser = {
+  //         ...data,
+  //         role: data.role || "USER",
+  //       };
+
+  //       localStorage.setItem("loggedInStudent", JSON.stringify(loggedInUser));
+
+  //       localStorage.setItem("isAdmin", "true");
+
+  //       if (loggedInUser.role === "ADMIN") {
+  //         navigate("/admin");
+  //       } else if (loggedInUser.role === "USER") {
+  //         navigate("/user");
+  //       } else {
+  //         localStorage.removeItem("loggedInStudent");
+  //         localStorage.removeItem("isAdmin");
+
+  //         setError("Invalid user role.");
+  //       }
+
+  //       return;
+  //     } catch (userError) {
+  //       console.log(
+  //         "User login failed, trying student login...",
+  //         getError(userError),
+  //       );
+  //     }
+
+  //     const { data: student } = await axios.post(
+  //       `${apiUrl}/api/students/login-student`,
+  //       loginData,
+  //     );
+
+  //     const loggedInStudent = {
+  //       ...student,
+  //       role: "STUDENT",
+  //       token: student.token || null,
+  //     };
+
+  //     localStorage.setItem("loggedInStudent", JSON.stringify(loggedInStudent));
+
+  //     localStorage.setItem("isAdmin", "false");
+
+  //     navigate("/student");
+  //   } catch (studentError) {
+  //     console.error("Login failed:", studentError);
+
+  //     setError(getError(studentError) || "Invalid username or password.");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   return (
     <main className="min-h-screen bg-bg px-4 py-10 sm:px-6">

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  FiAlertCircle,
   FiArrowLeft,
   FiArrowRight,
   FiCheck,
@@ -200,8 +201,30 @@ const ExamQuestion = ({
 
   if (!currentQuestion) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <p className="text-light">This examination has no questions.</p>
+      <div className="flex min-h-[60vh] items-center justify-center px-4">
+        <div className="w-full max-w-md rounded-2xl border border-border bg-bg-deep p-6 text-center shadow-xl">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-warning/10 text-warning">
+            <FiAlertCircle size={28} />
+          </div>
+
+          <h2 className="mt-5 text-lg font-semibold text-white">
+            No Questions Available
+          </h2>
+
+          <p className="mt-2 text-sm leading-6 text-light">
+            This examination does not contain any questions yet. Please return
+            to your dashboard and try another examination.
+          </p>
+
+          <button
+            type="button"
+            onClick={() => navigate("/student")}
+            className="mt-6 inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-bg transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-primary/20"
+          >
+            <FiArrowLeft size={18} />
+            Back to Dashboard
+          </button>
+        </div>
       </div>
     );
   }

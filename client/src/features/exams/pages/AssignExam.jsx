@@ -12,6 +12,8 @@ import {
 
 import { apiUrl, getError } from "../../../utils";
 import Spinner from "../../../components/ui/Spinner";
+import AlertDialog from "../../../components/ui/AlertDialog";
+import Dialog from "../../../components/ui/Dialog";
 
 const getLoggedInUser = () => {
   try {
@@ -22,6 +24,12 @@ const getLoggedInUser = () => {
 };
 
 const AssignExam = () => {
+  /*
+   * =========================================================
+   * STATE
+   * =========================================================
+   */
+
   const [users, setUsers] = useState([]);
   const [exams, setExams] = useState([]);
 
@@ -40,28 +48,54 @@ const AssignExam = () => {
   const [assigning, setAssigning] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  /*
+   * =========================================================
+   * ALERT DIALOG
+   * =========================================================
+   */
+
+  const [openAlert, setOpenAlert] = useState(false);
+  const [alertMessage, setAlertMessage] = useState("");
+
+  const showAlert = (message) => {
+    setAlertMessage(message);
+    setOpenAlert(true);
+  };
+
+  /*
+   * =========================================================
+   * CONFIRMATION DIALOG
+   * =========================================================
+   */
+
+  const [openDialog, setOpenDialog] = useState(false);
+
+  /*
+   * =========================================================
+   * LOGGED-IN USER
+   * =========================================================
+   */
 
   const loggedInUser = useMemo(() => getLoggedInUser(), []);
+
   const schoolId = loggedInUser?.schoolId;
 
   /*
-   * ---------------------------------------------------------
-   * Fetch users
-   * ---------------------------------------------------------
+   * =========================================================
+   * FETCH USERS
+   * =========================================================
    */
 
   const fetchUsers = async (showRefreshLoader = false) => {
     if (!schoolId) {
-      setError("No school information found for the logged-in user.");
       setLoadingUsers(false);
+
+      showAlert("No school information found for the logged-in user.");
+
       return;
     }
 
     try {
-      setError("");
-
       if (showRefreshLoader) {
         setRefreshing(true);
       } else {
@@ -74,12 +108,14 @@ const AssignExam = () => {
 
       const userList = Array.isArray(data) ? data : [];
 
-      // Assignment should normally be for regular users.
+      /*
+       * Only regular users should receive examinations.
+       */
       setUsers(userList.filter((user) => user.role === "USER"));
     } catch (err) {
       console.error("Failed to fetch users:", err);
 
-      setError(getError(err) || "Failed to load users.");
+      showAlert(getError(err) || "Failed to load users.");
     } finally {
       setLoadingUsers(false);
       setRefreshing(false);
@@ -87,9 +123,9 @@ const AssignExam = () => {
   };
 
   /*
-   * ---------------------------------------------------------
-   * Fetch exams
-   * ---------------------------------------------------------
+   * =========================================================
+   * FETCH EXAMS
+   * =========================================================
    */
 
   const fetchExams = async (term, level) => {
@@ -100,7 +136,6 @@ const AssignExam = () => {
 
     try {
       setLoadingExams(true);
-      setError("");
 
       const { data } = await axios.get(
         `${apiUrl}/api/exams/exams-by-level-term`,
@@ -117,17 +152,18 @@ const AssignExam = () => {
     } catch (err) {
       console.error("Failed to fetch exams:", err);
 
-      setError(getError(err) || "Failed to load exams.");
       setExams([]);
+
+      showAlert(getError(err) || "Failed to load examinations.");
     } finally {
       setLoadingExams(false);
     }
   };
 
   /*
-   * ---------------------------------------------------------
-   * Initial users
-   * ---------------------------------------------------------
+   * =========================================================
+   * INITIAL USERS
+   * =========================================================
    */
 
   useEffect(() => {
@@ -135,9 +171,9 @@ const AssignExam = () => {
   }, [schoolId]);
 
   /*
-   * ---------------------------------------------------------
-   * Filter users
-   * ---------------------------------------------------------
+   * =========================================================
+   * FILTER USERS
+   * =========================================================
    */
 
   const filteredUsers = useMemo(() => {
@@ -155,9 +191,9 @@ const AssignExam = () => {
   }, [users, userSearch]);
 
   /*
-   * ---------------------------------------------------------
-   * Filter exams
-   * ---------------------------------------------------------
+   * =========================================================
+   * FILTER EXAMS
+   * =========================================================
    */
 
   const filteredExams = useMemo(() => {
@@ -176,9 +212,9 @@ const AssignExam = () => {
   }, [exams, examSearch]);
 
   /*
-   * ---------------------------------------------------------
-   * Term change
-   * ---------------------------------------------------------
+   * =========================================================
+   * TERM CHANGE
+   * =========================================================
    */
 
   const handleTermChange = async (event) => {
@@ -191,9 +227,9 @@ const AssignExam = () => {
   };
 
   /*
-   * ---------------------------------------------------------
-   * Level change
-   * ---------------------------------------------------------
+   * =========================================================
+   * LEVEL CHANGE
+   * =========================================================
    */
 
   const handleLevelChange = async (event) => {
@@ -206,49 +242,82 @@ const AssignExam = () => {
   };
 
   /*
-   * ---------------------------------------------------------
-   * Assign exam
-   * ---------------------------------------------------------
+   * =========================================================
+   * ASSIGN EXAM
+   *
+   * This opens the custom confirmation dialog.
+   * The actual API request happens inside
+   * confirmAssignExam().
+   * =========================================================
    */
 
-  const handleAssignExam = async () => {
+  const handleAssignExam = () => {
     if (!selectedUserId) {
-      setError("Please select a user.");
+      showAlert("Please select a user.");
       return;
     }
 
     if (!selectedExamId) {
-      setError("Please select an examination.");
+      showAlert("Please select an examination.");
+      return;
+    }
+
+    setOpenDialog(true);
+  };
+
+  /*
+   * =========================================================
+   * CONFIRM ASSIGNMENT
+   * =========================================================
+   */
+
+  const confirmAssignExam = async () => {
+    if (!selectedUserId || !selectedExamId) {
+      setOpenDialog(false);
+
+      showAlert("Please select both a user and an examination.");
+
       return;
     }
 
     try {
       setAssigning(true);
-      setError("");
-      setSuccess("");
 
       await axios.post(`${apiUrl}/api/user-exams/assign`, {
         userId: selectedUserId,
         examId: selectedExamId,
       });
 
-      setSuccess("Examination assigned successfully.");
+      /*
+       * Close confirmation dialog.
+       */
+      setOpenDialog(false);
 
+      /*
+       * Clear current selections.
+       */
       setSelectedUserId("");
       setSelectedExamId("");
+
+      /*
+       * Show success using custom AlertDialog.
+       */
+      showAlert("Examination assigned successfully.");
     } catch (err) {
       console.error("Failed to assign exam:", err);
 
-      setError(getError(err) || "Failed to assign examination.");
+      setOpenDialog(false);
+
+      showAlert(getError(err) || "Failed to assign examination.");
     } finally {
       setAssigning(false);
     }
   };
 
   /*
-   * ---------------------------------------------------------
-   * Clear filters
-   * ---------------------------------------------------------
+   * =========================================================
+   * CLEAR FILTERS
+   * =========================================================
    */
 
   const clearFilters = () => {
@@ -260,34 +329,61 @@ const AssignExam = () => {
   };
 
   /*
-   * ---------------------------------------------------------
-   * Loading
-   * ---------------------------------------------------------
+   * =========================================================
+   * LOADING
+   * =========================================================
    */
 
   if (loadingUsers) {
     return (
-      <section className="flex min-h-screen items-center justify-center bg-bg px-6">
-        <Spinner size="4rem" />
+      <section className="min-h-screen bg-bg px-4 py-6 sm:px-6 lg:px-8">
+        <div className="flex min-h-[60vh] items-center justify-center">
+          <Spinner size="3rem" />
+        </div>
       </section>
     );
   }
 
   /*
-   * ---------------------------------------------------------
-   * Page
-   * ---------------------------------------------------------
+   * =========================================================
+   * PAGE
+   * =========================================================
    */
 
   return (
-    <section className="min-h-screen bg-bg px-3 py-5 sm:px-5 lg:px-8">
+    <section className="min-h-screen bg-bg px-4 py-6 sm:px-6 lg:px-8">
+      {/* =====================================================
+          ALERT DIALOG
+      ====================================================== */}
+
+      {openAlert && (
+        <AlertDialog setOpenAlert={setOpenAlert} message={alertMessage} />
+      )}
+
+      {/* =====================================================
+          CONFIRMATION DIALOG
+      ====================================================== */}
+
+      {openDialog && (
+        <Dialog
+          setOpenDialog={setOpenDialog}
+          message="Are you sure you want to assign this examination to the selected user?"
+          action={confirmAssignExam}
+          loading={assigning}
+          title="Assign Examination"
+        />
+      )}
+
       <div className="mx-auto max-w-7xl">
-        {/* Header */}
+        {/* =====================================================
+            HEADER
+        ====================================================== */}
+
         <header className="mb-6 rounded-2xl border border-border bg-bg-deep p-5 shadow-xl sm:p-6">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-variant text-primary">
-                <FiUsers className="text-2xl" />
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <FiFileText size={22} />
               </div>
 
               <div>
@@ -335,25 +431,15 @@ const AssignExam = () => {
           </div>
         </header>
 
-        {/* Messages */}
-        {error && (
-          <div className="mb-5 rounded-xl border border-danger/30 bg-danger-variant px-4 py-3 text-sm text-danger">
-            {error}
-          </div>
-        )}
+        {/* =====================================================
+            MAIN GRID
+        ====================================================== */}
 
-        {success && (
-          <div className="mb-5 flex items-center gap-2 rounded-xl border border-success/30 bg-success-variant px-4 py-3 text-sm text-success">
-            <FiCheck />
-            {success}
-          </div>
-        )}
-
-        {/* Main grid */}
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-          {/* =====================================================
+          {/* ===================================================
               USER SECTION
-          ====================================================== */}
+          ==================================================== */}
+
           <div className="overflow-hidden rounded-2xl border border-border bg-bg-deep shadow-xl">
             <div className="border-b border-border p-5">
               <div className="flex items-center gap-3">
@@ -474,9 +560,10 @@ const AssignExam = () => {
             </div>
           </div>
 
-          {/* =====================================================
+          {/* ===================================================
               EXAM SECTION
-          ====================================================== */}
+          ==================================================== */}
+
           <div className="overflow-hidden rounded-2xl border border-border bg-bg-deep shadow-xl">
             <div className="border-b border-border p-5">
               <div className="flex items-center gap-3">
@@ -496,6 +583,7 @@ const AssignExam = () => {
               </div>
 
               {/* Filters */}
+
               <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <select
                   value={selectedTerm}
@@ -514,8 +602,11 @@ const AssignExam = () => {
                   "
                 >
                   <option value="">Select Term</option>
+
                   <option value="FIRST">First Term</option>
+
                   <option value="SECOND">Second Term</option>
+
                   <option value="THIRD">Third Term</option>
                 </select>
 
@@ -536,11 +627,17 @@ const AssignExam = () => {
                   "
                 >
                   <option value="">Select Class</option>
+
                   <option value="js1">JSS 1</option>
+
                   <option value="js2">JSS 2</option>
+
                   <option value="js3">JSS 3</option>
+
                   <option value="ss1">SSS 1</option>
+
                   <option value="ss2">SSS 2</option>
+
                   <option value="ss3">SSS 3</option>
                 </select>
               </div>
@@ -596,6 +693,7 @@ const AssignExam = () => {
             </div>
 
             {/* Exam list */}
+
             <div className="max-h-[430px] overflow-y-auto">
               {loadingExams ? (
                 <div className="flex min-h-[250px] items-center justify-center">
@@ -670,6 +768,7 @@ const AssignExam = () => {
         {/* =====================================================
             ASSIGN ACTION
         ====================================================== */}
+
         <div className="mt-6 rounded-2xl border border-border bg-bg-deep p-5 shadow-xl sm:p-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>

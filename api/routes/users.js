@@ -485,4 +485,147 @@ userRoute.post(
   }),
 );
 
+// user-student-login
+userRoute.post(
+  "/user-student-login",
+  expressAsyncHandler(async (req, res) => {
+    const { username, password } = req.body;
+
+    if (!username || !password) {
+      return res.status(400).json({
+        message: "Username and password are required.",
+      });
+    }
+
+    try {
+      // =========================================================
+      // 1. TRY USER FIRST
+      // =========================================================
+
+      const user = await prisma.user.findUnique({
+        where: { username },
+      });
+
+      if (user) {
+        // User exists, so don't try Student.
+        if (user.password !== password) {
+          return res.status(401).json({
+            message: "Invalid username or password.",
+          });
+        }
+
+        const token = jwt.sign(
+          {
+            id: user.id,
+            role: user.role,
+            schoolId: user.schoolId,
+          },
+          process.env.JWT_SECRET,
+          {
+            expiresIn: process.env.JWT_EXPIRES_IN,
+          },
+        );
+
+        let currentSessionId = null;
+        let classes = [];
+        let sessions = [];
+
+        if (user.schoolId) {
+          const [currentSession, school, fetchedSessions] = await Promise.all([
+            prisma.academicSession.findFirst({
+              where: {
+                schoolId: user.schoolId,
+                isCurrent: true,
+              },
+            }),
+
+            prisma.school.findUnique({
+              where: {
+                id: user.schoolId,
+              },
+            }),
+
+            prisma.academicSession.findMany({
+              where: {
+                schoolId: user.schoolId,
+              },
+              orderBy: {
+                createdAt: "desc",
+              },
+              select: {
+                id: true,
+                name: true,
+                term: true,
+                isCurrent: true,
+              },
+            }),
+          ]);
+
+          currentSessionId = currentSession?.id || null;
+          classes = school?.classes || [];
+          sessions = fetchedSessions;
+        }
+
+        return res.status(200).json({
+          message: "Login successful",
+          role: user.role,
+          currentSessionId,
+          token,
+          userId: user.id,
+          schoolId: user.schoolId || null,
+          classes,
+          sessions,
+        });
+      }
+
+      // =========================================================
+      // 2. USER DOES NOT EXIST → TRY STUDENT
+      // =========================================================
+
+      const student = await prisma.student.findUnique({
+        where: {
+          username,
+        },
+      });
+
+      if (student) {
+        if (student.password !== password) {
+          return res.status(401).json({
+            message: "Invalid username or password.",
+          });
+        }
+
+        // Don't send password back to frontend.
+        const { password: _password, ...studentWithoutPassword } = student;
+
+        return res.status(200).json({
+          message: "Login successful",
+          role: "STUDENT",
+          token: null,
+          ...studentWithoutPassword,
+        });
+      }
+
+      // =========================================================
+      // 3. NEITHER USER NOR STUDENT EXISTS
+      // =========================================================
+
+      return res.status(401).json({
+        message: "Invalid username or password.",
+      });
+    } catch (error) {
+      console.error("Login database/server error:", error);
+
+      // =========================================================
+      // DATABASE / NETWORK ERROR
+      // =========================================================
+
+      return res.status(503).json({
+        message:
+          "Unable to connect to the server. Please check your internet connection and try again.",
+      });
+    }
+  }),
+);
+
 export { userRoute };

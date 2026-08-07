@@ -161,7 +161,7 @@ const ExamQuestions = () => {
 
               <button
                 type="button"
-                onClick={() => navigate(`/user/exams/${examId}/add-question`)}
+                onClick={() => navigate(`/add-question/${examId}`)}
                 className="mt-6 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-bg transition hover:brightness-110"
               >
                 <MdAdd size={20} />
