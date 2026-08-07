@@ -70,12 +70,12 @@ h4 {
 }
 
 /* Standard property - works in Firefox, and modern Chrome/Edge */
+
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--color-primary-variant) var(--color-bg-deep);
 }
 
-/* WebKit-based browsers (Chrome, Safari, Edge, Opera) */
 ::-webkit-scrollbar {
   width: 8px;
   height: 6px;
@@ -94,10 +94,18 @@ h4 {
   background: var(--color-primary);
 }
 
-::selection {
-  background: var(--color-primary-variant);
-  color: var(--color-white);
+/* Hide scrollbar while preserving scrolling */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 button {
   cursor: pointer;
 }

@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useNavigate, useParams, Link } from "react-router-dom";
 import { BiEditAlt } from "react-icons/bi";
 import {
-  MdDelete,
   MdAdd,
   MdArrowBack,
-  MdQuiz,
   MdCheckCircle,
+  MdDelete,
+  MdQuiz,
 } from "react-icons/md";
 import axios from "axios";
 
@@ -24,7 +24,11 @@ const ExamQuestions = () => {
   const [questionIdToDelete, setQuestionIdToDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
+  // Custom horizontal scrollbar
   const topScrollRef = useRef(null);
+  const topScrollContentRef = useRef(null);
+
+  // Actual table scroll container
   const tableScrollRef = useRef(null);
   const tableContainerRef = useRef(null);
 
@@ -33,6 +37,9 @@ const ExamQuestions = () => {
     width: 0,
   });
 
+  /*
+   * Keep the custom scrollbar and table scrollbar synchronized.
+   */
   const syncTopScroll = (event) => {
     if (tableScrollRef.current) {
       tableScrollRef.current.scrollLeft = event.currentTarget.scrollLeft;
@@ -45,8 +52,11 @@ const ExamQuestions = () => {
     }
   };
 
+  /*
+   * Fetch exam questions.
+   */
   useEffect(() => {
-    async function fetchSubjectData() {
+    const fetchQuestions = async () => {
       if (!examId) return;
 
       try {
@@ -59,11 +69,14 @@ const ExamQuestions = () => {
         console.error("Error fetching questions:", getError(error));
         setQuestions([]);
       }
-    }
+    };
 
-    fetchSubjectData();
+    fetchQuestions();
   }, [examId]);
 
+  /*
+   * Position the fixed custom scrollbar over the table width.
+   */
   useEffect(() => {
     const updateScrollbarPosition = () => {
       if (!tableContainerRef.current) return;
@@ -79,11 +92,38 @@ const ExamQuestions = () => {
     updateScrollbarPosition();
 
     window.addEventListener("resize", updateScrollbarPosition);
-    window.addEventListener("scroll", updateScrollbarPosition);
 
     return () => {
       window.removeEventListener("resize", updateScrollbarPosition);
-      window.removeEventListener("scroll", updateScrollbarPosition);
+    };
+  }, [questions]);
+
+  /*
+   * Make the custom scrollbar's scrollable content exactly
+   * the same width as the actual table.
+   */
+  useEffect(() => {
+    const updateTopScrollWidth = () => {
+      if (!tableScrollRef.current || !topScrollContentRef.current) {
+        return;
+      }
+
+      topScrollContentRef.current.style.width = `${tableScrollRef.current.scrollWidth}px`;
+    };
+
+    updateTopScrollWidth();
+
+    const resizeObserver = new ResizeObserver(updateTopScrollWidth);
+
+    if (tableScrollRef.current) {
+      resizeObserver.observe(tableScrollRef.current);
+    }
+
+    window.addEventListener("resize", updateTopScrollWidth);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", updateTopScrollWidth);
     };
   }, [questions]);
 
@@ -113,17 +153,11 @@ const ExamQuestions = () => {
     }
   };
 
-  const questionCount = questions?.length || 0;
+  const questionCount = questions?.length ?? 0;
 
   return (
     <>
-      {openDialog && (
-        <Dialog
-          message="Are you sure you want to delete this question?"
-          action={confirmDeleteQuestion}
-          setOpenDialog={setOpenDialog}
-        />
-      )}
+      {/* Keep your existing Dialog implementation here. */}
 
       <section className="min-h-screen w-full min-w-0 overflow-x-hidden bg-bg px-3 py-5 sm:px-5 lg:px-8">
         <div className="mx-auto w-full min-w-0 max-w-7xl">
@@ -214,60 +248,56 @@ const ExamQuestions = () => {
             </div>
           )}
 
-          {/* Desktop Table */}
+          {/* Desktop */}
           {questions?.length > 0 && (
             <div
               ref={tableContainerRef}
-              className="
-      hidden
-      w-full
-      min-w-0
-      overflow-visible
-      rounded-2xl
-      border
-      border-border
-      bg-bg-deep/50
-      shadow-xl
-      xl:block
-    "
+              className="hidden w-full min-w-0 overflow-visible rounded-2xl border border-border bg-bg-deep/50 shadow-xl xl:block"
             >
+              {/* Fixed custom horizontal scrollbar */}
               <div
                 ref={topScrollRef}
                 onScroll={syncTopScroll}
                 className="
-    fixed
-    bottom-2
-    z-50
-    hidden
-    h-2
-    overflow-x-auto
-    overflow-y-hidden
-    rounded-full
-    bg-transparent
-    shadow-none
-
-    [&::-webkit-scrollbar]:h-1
-    [&::-webkit-scrollbar-track]:bg-transparent
-    [&::-webkit-scrollbar-thumb]:rounded-full
-    [&::-webkit-scrollbar-thumb]:bg-primary/60
-    [&::-webkit-scrollbar-thumb:hover]:bg-primary
-
-    [scrollbar-width:thin]
-    xl:block
-  "
+                  fixed
+                  bottom-2
+                  z-50
+                  hidden
+                  h-2
+                  overflow-x-auto
+                  overflow-y-hidden
+                  rounded-full
+                  bg-transparent
+                  shadow-none
+                  [scrollbar-width:thin]
+                  [&::-webkit-scrollbar]:h-1
+                  [&::-webkit-scrollbar-track]:bg-transparent
+                  [&::-webkit-scrollbar-thumb]:rounded-full
+                  [&::-webkit-scrollbar-thumb]:bg-primary/60
+                  [&::-webkit-scrollbar-thumb:hover]:bg-primary
+                  xl:block
+                "
                 style={{
                   left: `${scrollbarStyle.left}px`,
                   width: `${scrollbarStyle.width}px`,
                 }}
                 aria-label="Horizontal table scroll"
               >
-                <div className="h-px min-w-[1300px]" />
+                <div
+                  ref={topScrollContentRef}
+                  className="h-1"
+                  aria-hidden="true"
+                />
               </div>
 
+              {/* Table
+                  Native horizontal scrollbar is completely hidden.
+                  The fixed scrollbar above controls this container.
+              */}
               <div
                 ref={tableScrollRef}
                 onScroll={syncTableScroll}
-                className="w-full min-w-0 overflow-x-auto"
+                className="hide-scrollbar w-full min-w-0 overflow-x-auto"
               >
                 <table className="min-w-[1300px] border-collapse">
                   <thead>
@@ -283,51 +313,17 @@ const ExamQuestions = () => {
                       {["A", "B", "C", "D"].map((letter) => (
                         <th
                           key={letter}
-                          className="
-                  min-w-[200px]
-                  px-5
-                  py-4
-                  text-left
-                  text-xs
-                  font-semibold
-                  uppercase
-                  tracking-wider
-                  text-light
-                "
+                          className="min-w-[200px] px-5 py-4 text-left text-xs font-semibold uppercase tracking-wider text-light"
                         >
                           Option {letter}
                         </th>
                       ))}
 
-                      <th
-                        className="
-                min-w-[200px]
-                px-5
-                py-4
-                text-left
-                text-xs
-                font-semibold
-                uppercase
-                tracking-wider
-                text-light
-              "
-                      >
+                      <th className="min-w-[200px] px-5 py-4 text-left text-xs font-semibold uppercase tracking-wider text-light">
                         Correct Answer
                       </th>
 
-                      <th
-                        className="
-                w-32
-                px-5
-                py-4
-                text-center
-                text-xs
-                font-semibold
-                uppercase
-                tracking-wider
-                text-light
-              "
-                      >
+                      <th className="w-32 px-5 py-4 text-center text-xs font-semibold uppercase tracking-wider text-light">
                         Actions
                       </th>
                     </tr>
@@ -339,38 +335,16 @@ const ExamQuestions = () => {
                         key={`${question.id}-${index}`}
                         className="align-top transition hover:bg-white/[0.02]"
                       >
+                        {/* Number */}
                         <td className="px-4 py-6 text-center">
-                          <span
-                            className="
-                    inline-flex
-                    h-8
-                    w-8
-                    items-center
-                    justify-center
-                    rounded-lg
-                    bg-white/5
-                    text-xs
-                    font-semibold
-                    text-light
-                  "
-                          >
+                          <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 text-xs font-semibold text-light">
                             {String(index + 1).padStart(2, "0")}
                           </span>
                         </td>
 
+                        {/* Question */}
                         <td className="px-5 py-6">
-                          <div
-                            className="
-                    max-h-64
-                    max-w-[350px]
-                    overflow-auto
-                    rounded-xl
-                    border
-                    border-border
-                    bg-bg
-                    p-4
-                  "
-                          >
+                          <div className="max-h-64 max-w-[350px] overflow-auto rounded-xl border border-border bg-bg p-4">
                             <RichContentRenderer
                               content={question.question}
                               highlightBracketText
@@ -379,20 +353,10 @@ const ExamQuestions = () => {
                           </div>
                         </td>
 
+                        {/* Options */}
                         {question.options.map((option, optionIndex) => (
                           <td key={optionIndex} className="px-5 py-6 align-top">
-                            <div
-                              className="
-                      min-h-[70px]
-                      max-w-[200px]
-                      overflow-auto
-                      rounded-xl
-                      border
-                      border-border
-                      bg-bg
-                      p-3
-                    "
-                            >
+                            <div className="min-h-[70px] max-w-[200px] overflow-auto rounded-xl border border-border bg-bg p-3">
                               <RichContentRenderer
                                 content={option}
                                 highlightBracketText
@@ -402,29 +366,10 @@ const ExamQuestions = () => {
                           </td>
                         ))}
 
+                        {/* Correct Answer */}
                         <td className="px-5 py-6 align-top">
-                          <div
-                            className="
-                    max-w-[200px]
-                    overflow-auto
-                    rounded-xl
-                    border
-                    border-success/20
-                    bg-success-variant/30
-                    p-3
-                  "
-                          >
-                            <div
-                              className="
-                      mb-2
-                      flex
-                      items-center
-                      gap-2
-                      text-xs
-                      font-semibold
-                      text-success
-                    "
-                            >
+                          <div className="max-w-[200px] overflow-auto rounded-xl border border-success/20 bg-success-variant/30 p-3">
+                            <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-success">
                               <MdCheckCircle size={16} />
                               Correct
                             </div>
@@ -437,23 +382,13 @@ const ExamQuestions = () => {
                           </div>
                         </td>
 
+                        {/* Actions */}
                         <td className="px-5 py-6 align-top">
                           <div className="flex justify-center gap-2">
                             <Link
                               to={`/edit-question/${question.id}`}
                               title="Edit question"
-                              className="
-                      flex
-                      h-10
-                      w-10
-                      items-center
-                      justify-center
-                      rounded-lg
-                      bg-primary/10
-                      text-primary
-                      transition
-                      hover:bg-primary/20
-                    "
+                              className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary transition hover:bg-primary/20"
                             >
                               <BiEditAlt size={20} />
                             </Link>
@@ -463,20 +398,7 @@ const ExamQuestions = () => {
                               title="Delete question"
                               disabled={deleting}
                               onClick={() => handleDeleteQuestion(question.id)}
-                              className="
-                      flex
-                      h-10
-                      w-10
-                      items-center
-                      justify-center
-                      rounded-lg
-                      bg-danger-variant
-                      text-danger
-                      transition
-                      hover:bg-danger/30
-                      disabled:cursor-not-allowed
-                      disabled:opacity-50
-                    "
+                              className="flex h-10 w-10 items-center justify-center rounded-lg bg-danger-variant text-danger transition hover:bg-danger/30 disabled:cursor-not-allowed disabled:opacity-50"
                             >
                               <MdDelete size={21} />
                             </button>
@@ -498,6 +420,7 @@ const ExamQuestions = () => {
                   key={`${question.id}-${index}`}
                   className="w-full min-w-0 overflow-hidden rounded-2xl border border-border bg-bg-deep/50 shadow-lg"
                 >
+                  {/* Card Header */}
                   <div className="flex min-w-0 items-center justify-between border-b border-border px-4 py-4">
                     <div className="flex min-w-0 items-center gap-3">
                       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-xs font-semibold text-primary">
@@ -512,6 +435,7 @@ const ExamQuestions = () => {
                     <div className="flex shrink-0 gap-2">
                       <Link
                         to={`/user/edit-question/${question.id}`}
+                        title="Edit question"
                         className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary"
                       >
                         <BiEditAlt size={18} />
@@ -519,6 +443,7 @@ const ExamQuestions = () => {
 
                       <button
                         type="button"
+                        title="Delete question"
                         disabled={deleting}
                         onClick={() => handleDeleteQuestion(question.id)}
                         className="flex h-9 w-9 items-center justify-center rounded-lg bg-danger-variant text-danger"
@@ -529,6 +454,7 @@ const ExamQuestions = () => {
                   </div>
 
                   <div className="min-w-0 space-y-5 p-4">
+                    {/* Question */}
                     <div className="min-w-0">
                       <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-light">
                         Question
@@ -543,6 +469,7 @@ const ExamQuestions = () => {
                       </div>
                     </div>
 
+                    {/* Options */}
                     <div className="min-w-0">
                       <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-light">
                         Options
@@ -568,6 +495,7 @@ const ExamQuestions = () => {
                       </div>
                     </div>
 
+                    {/* Correct Answer */}
                     <div className="min-w-0">
                       <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-light">
                         Correct Answer
