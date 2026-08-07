@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { BiEditAlt } from "react-icons/bi";
 import {
@@ -24,6 +24,27 @@ const ExamQuestions = () => {
   const [questionIdToDelete, setQuestionIdToDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
+  const topScrollRef = useRef(null);
+  const tableScrollRef = useRef(null);
+  const tableContainerRef = useRef(null);
+
+  const [scrollbarStyle, setScrollbarStyle] = useState({
+    left: 0,
+    width: 0,
+  });
+
+  const syncTopScroll = (event) => {
+    if (tableScrollRef.current) {
+      tableScrollRef.current.scrollLeft = event.currentTarget.scrollLeft;
+    }
+  };
+
+  const syncTableScroll = (event) => {
+    if (topScrollRef.current) {
+      topScrollRef.current.scrollLeft = event.currentTarget.scrollLeft;
+    }
+  };
+
   useEffect(() => {
     async function fetchSubjectData() {
       if (!examId) return;
@@ -42,6 +63,29 @@ const ExamQuestions = () => {
 
     fetchSubjectData();
   }, [examId]);
+
+  useEffect(() => {
+    const updateScrollbarPosition = () => {
+      if (!tableContainerRef.current) return;
+
+      const rect = tableContainerRef.current.getBoundingClientRect();
+
+      setScrollbarStyle({
+        left: Math.max(rect.left, 0),
+        width: Math.min(rect.width, window.innerWidth),
+      });
+    };
+
+    updateScrollbarPosition();
+
+    window.addEventListener("resize", updateScrollbarPosition);
+    window.addEventListener("scroll", updateScrollbarPosition);
+
+    return () => {
+      window.removeEventListener("resize", updateScrollbarPosition);
+      window.removeEventListener("scroll", updateScrollbarPosition);
+    };
+  }, [questions]);
 
   const handleDeleteQuestion = (questionId) => {
     setQuestionIdToDelete(questionId);
@@ -172,9 +216,59 @@ const ExamQuestions = () => {
 
           {/* Desktop Table */}
           {questions?.length > 0 && (
-            <div className="hidden w-full min-w-0 overflow-hidden rounded-2xl border border-border bg-bg-deep/50 shadow-xl xl:block">
-              {/* ONLY THIS ELEMENT SHOULD HORIZONTALLY SCROLL */}
-              <div className="w-full min-w-0 overflow-x-auto">
+            <div
+              ref={tableContainerRef}
+              className="
+      hidden
+      w-full
+      min-w-0
+      overflow-visible
+      rounded-2xl
+      border
+      border-border
+      bg-bg-deep/50
+      shadow-xl
+      xl:block
+    "
+            >
+              <div
+                ref={topScrollRef}
+                onScroll={syncTopScroll}
+                className="
+    fixed
+    bottom-2
+    z-50
+    hidden
+    h-2
+    overflow-x-auto
+    overflow-y-hidden
+    rounded-full
+    bg-transparent
+    shadow-none
+
+    [&::-webkit-scrollbar]:h-1
+    [&::-webkit-scrollbar-track]:bg-transparent
+    [&::-webkit-scrollbar-thumb]:rounded-full
+    [&::-webkit-scrollbar-thumb]:bg-primary/60
+    [&::-webkit-scrollbar-thumb:hover]:bg-primary
+
+    [scrollbar-width:thin]
+    xl:block
+  "
+                style={{
+                  left: `${scrollbarStyle.left}px`,
+                  width: `${scrollbarStyle.width}px`,
+                }}
+                aria-label="Horizontal table scroll"
+              >
+                <div className="h-px min-w-[1300px]" />
+              </div>
+
+              <div
+                ref={tableScrollRef}
+                onScroll={syncTableScroll}
+                className="w-full min-w-0 overflow-x-auto"
+              >
                 <table className="min-w-[1300px] border-collapse">
                   <thead>
                     <tr className="border-b border-border bg-white/[0.025]">
@@ -189,17 +283,51 @@ const ExamQuestions = () => {
                       {["A", "B", "C", "D"].map((letter) => (
                         <th
                           key={letter}
-                          className="min-w-[200px] px-5 py-4 text-left text-xs font-semibold uppercase tracking-wider text-light"
+                          className="
+                  min-w-[200px]
+                  px-5
+                  py-4
+                  text-left
+                  text-xs
+                  font-semibold
+                  uppercase
+                  tracking-wider
+                  text-light
+                "
                         >
                           Option {letter}
                         </th>
                       ))}
 
-                      <th className="min-w-[200px] px-5 py-4 text-left text-xs font-semibold uppercase tracking-wider text-light">
+                      <th
+                        className="
+                min-w-[200px]
+                px-5
+                py-4
+                text-left
+                text-xs
+                font-semibold
+                uppercase
+                tracking-wider
+                text-light
+              "
+                      >
                         Correct Answer
                       </th>
 
-                      <th className="w-32 px-5 py-4 text-center text-xs font-semibold uppercase tracking-wider text-light">
+                      <th
+                        className="
+                w-32
+                px-5
+                py-4
+                text-center
+                text-xs
+                font-semibold
+                uppercase
+                tracking-wider
+                text-light
+              "
+                      >
                         Actions
                       </th>
                     </tr>
@@ -212,13 +340,37 @@ const ExamQuestions = () => {
                         className="align-top transition hover:bg-white/[0.02]"
                       >
                         <td className="px-4 py-6 text-center">
-                          <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 text-xs font-semibold text-light">
+                          <span
+                            className="
+                    inline-flex
+                    h-8
+                    w-8
+                    items-center
+                    justify-center
+                    rounded-lg
+                    bg-white/5
+                    text-xs
+                    font-semibold
+                    text-light
+                  "
+                          >
                             {String(index + 1).padStart(2, "0")}
                           </span>
                         </td>
 
                         <td className="px-5 py-6">
-                          <div className="max-h-64 max-w-[350px] overflow-auto rounded-xl border border-border bg-bg p-4">
+                          <div
+                            className="
+                    max-h-64
+                    max-w-[350px]
+                    overflow-auto
+                    rounded-xl
+                    border
+                    border-border
+                    bg-bg
+                    p-4
+                  "
+                          >
                             <RichContentRenderer
                               content={question.question}
                               highlightBracketText
@@ -229,7 +381,18 @@ const ExamQuestions = () => {
 
                         {question.options.map((option, optionIndex) => (
                           <td key={optionIndex} className="px-5 py-6 align-top">
-                            <div className="min-h-[70px] max-w-[200px] overflow-auto rounded-xl border border-border bg-bg p-3">
+                            <div
+                              className="
+                      min-h-[70px]
+                      max-w-[200px]
+                      overflow-auto
+                      rounded-xl
+                      border
+                      border-border
+                      bg-bg
+                      p-3
+                    "
+                            >
                               <RichContentRenderer
                                 content={option}
                                 highlightBracketText
@@ -240,8 +403,28 @@ const ExamQuestions = () => {
                         ))}
 
                         <td className="px-5 py-6 align-top">
-                          <div className="max-w-[200px] overflow-auto rounded-xl border border-success/20 bg-success-variant/30 p-3">
-                            <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-success">
+                          <div
+                            className="
+                    max-w-[200px]
+                    overflow-auto
+                    rounded-xl
+                    border
+                    border-success/20
+                    bg-success-variant/30
+                    p-3
+                  "
+                          >
+                            <div
+                              className="
+                      mb-2
+                      flex
+                      items-center
+                      gap-2
+                      text-xs
+                      font-semibold
+                      text-success
+                    "
+                            >
                               <MdCheckCircle size={16} />
                               Correct
                             </div>
@@ -259,7 +442,18 @@ const ExamQuestions = () => {
                             <Link
                               to={`/edit-question/${question.id}`}
                               title="Edit question"
-                              className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary transition hover:bg-primary/20"
+                              className="
+                      flex
+                      h-10
+                      w-10
+                      items-center
+                      justify-center
+                      rounded-lg
+                      bg-primary/10
+                      text-primary
+                      transition
+                      hover:bg-primary/20
+                    "
                             >
                               <BiEditAlt size={20} />
                             </Link>
@@ -269,7 +463,20 @@ const ExamQuestions = () => {
                               title="Delete question"
                               disabled={deleting}
                               onClick={() => handleDeleteQuestion(question.id)}
-                              className="flex h-10 w-10 items-center justify-center rounded-lg bg-danger-variant text-danger transition hover:bg-danger/30 disabled:cursor-not-allowed disabled:opacity-50"
+                              className="
+                      flex
+                      h-10
+                      w-10
+                      items-center
+                      justify-center
+                      rounded-lg
+                      bg-danger-variant
+                      text-danger
+                      transition
+                      hover:bg-danger/30
+                      disabled:cursor-not-allowed
+                      disabled:opacity-50
+                    "
                             >
                               <MdDelete size={21} />
                             </button>
