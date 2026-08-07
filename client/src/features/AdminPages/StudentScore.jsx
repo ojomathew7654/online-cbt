@@ -2,8 +2,8 @@ import { useState } from "react";
 import axios from "axios";
 import { FiTrash2, FiBarChart2, FiFilter } from "react-icons/fi";
 
-import { apiUrl, getError } from "../../../utils";
-import Spinner from "../../../components/ui/Spinner";
+import { apiUrl, getError } from "../../utils";
+import Spinner from "../../components/ui/Spinner";
 
 const StudentScore = () => {
   const [students, setStudents] = useState([]);

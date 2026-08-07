@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { FormInput } from "../../../components/shared/form/FormInput";
+import { FormInput } from "../../components/shared/form/FormInput";
 import axios from "axios";
-import { getError } from "../../../components/shared/getError";
-import { apiUrl } from "../../../utils";
+import { getError } from "../../components/shared/getError";
+import { apiUrl } from "../../utils";
 import { FiBookOpen, FiLoader, FiUserPlus, FiUsers } from "react-icons/fi";
 
 const Register = () => {
@@ -207,11 +207,6 @@ const Register = () => {
               )}
             </button>
           </form>
-
-          {/* Footer */}
-          <p className="mt-5 text-center text-xs text-light/60">
-            Student accounts created here will be associated with your school.
-          </p>
         </div>
       </div>
     </main>

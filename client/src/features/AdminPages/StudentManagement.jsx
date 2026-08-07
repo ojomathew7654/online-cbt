@@ -1,13 +1,19 @@
 import { useState } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
-import { FiEdit2, FiTrash2, FiUsers, FiChevronDown } from "react-icons/fi";
+import {
+  FiEdit2,
+  FiTrash2,
+  FiUsers,
+  FiChevronDown,
+  FiUserPlus,
+} from "react-icons/fi";
 
-import Dialog from "../../../components/ui/Dialog";
-import { apiUrl, getError } from "../../../utils";
-import Spinner from "../../../components/ui/Spinner";
+import Dialog from "../../components/ui/Dialog";
+import { apiUrl, getError } from "../../utils";
+import Spinner from "../../components/ui/Spinner";
 
-const AllStudents = () => {
+const StudentManagement = () => {
   const [students, setStudents] = useState([]);
   const [openDialog, setOpenDialog] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -98,43 +104,71 @@ const AllStudents = () => {
                 </div>
               </div>
 
-              {/* Level Select */}
-              <div className="relative w-full md:w-56">
-                <select
-                  onChange={handleLevelChange}
-                  defaultValue=""
+              <div className="flex w-full flex-col gap-3 sm:flex-row md:w-auto md:items-center">
+                {/* Register Student */}
+                <Link
+                  to="/register"
                   className="
-                    w-full
-                    appearance-none
-                    rounded-xl
-                    border
-                    border-border
-                    bg-bg
-                    px-4
-                    py-3
-                    pr-10
-                    text-sm
-                    font-medium
-                    text-white
-                    outline-none
-                    transition
-                    focus:border-primary
-                    focus:ring-2
-                    focus:ring-primary/20
-                  "
+      inline-flex
+      items-center
+      justify-center
+      gap-2
+      rounded-xl
+      bg-primary
+      px-4
+      py-3
+      text-sm
+      font-semibold
+      text-bg
+      transition
+      hover:opacity-90
+      focus:outline-none
+      focus:ring-2
+      focus:ring-primary/30
+    "
                 >
-                  <option value="" disabled>
-                    Select level
-                  </option>
-                  <option value="js1">JSS 1</option>
-                  <option value="js2">JSS 2</option>
-                  <option value="js3">JSS 3</option>
-                  <option value="ss1">SSS 1</option>
-                  <option value="ss2">SSS 2</option>
-                  <option value="ss3">SSS 3</option>
-                </select>
+                  <FiUserPlus className="text-lg" />
+                  Register Student
+                </Link>
 
-                <FiChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-light" />
+                {/* Level Select */}
+                <div className="relative w-full sm:w-56">
+                  <select
+                    onChange={handleLevelChange}
+                    defaultValue=""
+                    className="
+        w-full
+        appearance-none
+        rounded-xl
+        border
+        border-border
+        bg-bg
+        px-4
+        py-3
+        pr-10
+        text-sm
+        font-medium
+        text-white
+        outline-none
+        transition
+        focus:border-primary
+        focus:ring-2
+        focus:ring-primary/20
+      "
+                  >
+                    <option value="" disabled>
+                      Select level
+                    </option>
+                    <option value="js1">JSS 1</option>
+                    <option value="js2">JSS 2</option>
+                    <option value="js3">JSS 3</option>
+                    <option value="ss1">SSS 1</option>
+                    <option value="ss2">SSS 2</option>
+                    <option value="ss3">SSS 3</option>
+                  </select>
+
+                  <FiChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-light" />
+                </div>
               </div>
             </div>
           </div>
@@ -290,4 +324,4 @@ const AllStudents = () => {
   );
 };
 
-export default AllStudents;
+export default StudentManagement;

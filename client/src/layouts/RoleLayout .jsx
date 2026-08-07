@@ -1,6 +1,6 @@
 import { Outlet } from "react-router-dom";
-import AdminSidebar from "../navigation/admin/AdminSidebar";
-import UserSidebar from "../navigation/user/UserSidebar";
+import AdminSidebar from "../navigation/AdminSidebar";
+import UserSidebar from "../navigation/UserSidebar";
 
 const RoleLayout = () => {
   const loggedInUser = JSON.parse(localStorage.getItem("loggedInStudent"));

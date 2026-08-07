@@ -1,29 +1,29 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import AuthLayout from "./layouts/AuthLayout";
-import Login from "./features/auth/pages/Login";
-import Home from "./features/dashboard/Home";
+import Login from "./features/auth/Login";
+import Home from "./Home";
 import AdminLayout from "./layouts/AdminLayout";
 import AdminDashboard from "./features/dashboard/AdminDashboard";
-import Register from "./features/auth/pages/Register";
+import Register from "./features/auth/Register";
 import SetExam from "./features/exams/pages/SetExam";
 import AllExam from "./features/exams/pages/AllExam";
 import ExamManagement from "./features/exams/pages/ExamManagement";
 import AddSingleQue from "./features/exam-editor/pages/AddSingleQue";
 import EditQuestion from "./features/exam-editor/pages/EditQuestion";
-import AllStudents from "./features/students/pages/AllStudents";
-import EditStudent from "./features/students/pages/EditSudent";
-import StudentScore from "./features/students/pages/StudentScore";
+import EditStudent from "./features/AdminPages/EditSudent";
+import StudentScore from "./features/AdminPages/StudentScore";
 // import Admin from "./features/settings/AdminSettings";
 import UserLayout from "./layouts/UserLayout";
 import StudentLayout from "./layouts/StudentLayout";
 import StudentDashboard from "./features/dashboard/StudentDashboard";
 import Exam from "./features/exams/pages/Exam";
 import ExamHistory from "./features/exams/pages/ExamHistory";
-import UserManagement from "./features/dashboard/UserManagement";
+import UserManagement from "./features/AdminPages/UserManagement";
 import AssignExam from "./features/exams/pages/AssignExam";
 import ExamQuestions from "./features/exams/pages/ExamQuestions";
 import RoleLayout from "./layouts/RoleLayout ";
 import TeacherDashboard from "./features/dashboard/TeacherDashboard";
+import StudentManagement from "./features/AdminPages/StudentManagement";
 
 const getUser = () => {
   try {
@@ -136,8 +136,8 @@ const router = createBrowserRouter([
       },
 
       {
-        path: "/studentlist",
-        element: <AllStudents />,
+        path: "/student-management",
+        element: <StudentManagement />,
       },
 
       {

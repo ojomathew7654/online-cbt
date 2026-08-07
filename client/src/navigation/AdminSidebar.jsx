@@ -2,13 +2,17 @@ import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   FaChartPie,
+  FaClipboardCheck,
+  FaFileImport,
+  FaGraduationCap,
   FaPowerOff,
-  FaQuestionCircle,
-  FaUserCircle,
+  FaUsers,
+  FaUserPlus,
 } from "react-icons/fa";
-import Dialog from "../../components/ui/Dialog";
+import { FiSettings, FiUserCheck } from "react-icons/fi";
+import Dialog from "../components/ui/Dialog";
 
-const UserSidebar = () => {
+const AdminSidebar = () => {
   const navigate = useNavigate();
 
   const [openDialog, setOpenDialog] = useState(false);
@@ -23,16 +27,50 @@ const UserSidebar = () => {
   const links = [
     {
       label: "Dashboard",
-      path: "/user",
+      path: "/admin",
       icon: FaChartPie,
+    },
+    {
+      label: "Student Management",
+      path: "/student-management",
+      icon: FaUsers,
+    },
+    {
+      label: "User Management",
+      path: "/users",
+      icon: FaUsers,
+    },
+    {
+      label: "Exam Management",
+      path: "/exam-management",
+      icon: FiSettings,
+    },
+    {
+      label: "Import Exam",
+      path: "/setexam",
+      icon: FaFileImport,
+    },
+    {
+      label: "All Exams",
+      path: "/allExam",
+      icon: FaClipboardCheck,
+    },
+    {
+      label: "Assign Exams",
+      path: "/assign-exam",
+      icon: FiUserCheck,
+    },
+    {
+      label: "Scores",
+      path: "/score",
+      icon: FaGraduationCap,
     },
   ];
 
   return (
     <>
       <aside className="sticky top-0 hidden h-screen w-72 shrink-0 flex-col border-r border-border bg-bg-deep lg:flex">
-        {" "}
-        {/* Header */}
+        {/* Logo */}
         <div className="flex h-20 items-center gap-3 border-b border-border px-6">
           <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl bg-primary text-bg">
             <img
@@ -47,13 +85,14 @@ const UserSidebar = () => {
               Exam System
             </h1>
 
-            <p className="text-xs text-light">User Portal</p>
+            <p className="text-xs text-light">Administration</p>
           </div>
         </div>
+
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto px-4 py-6">
           <p className="mb-3 px-3 text-xs font-semibold uppercase tracking-wider text-light">
-            Navigation
+            Management
           </p>
 
           <div className="space-y-1.5">
@@ -66,7 +105,7 @@ const UserSidebar = () => {
                   to={item.path}
                   className={({ isActive }) =>
                     [
-                      "flex items-center gap-3 rounded-xl px-4 py-3 transition-all",
+                      "group flex items-center gap-1 rounded-xl px-4 py-3 transition-all",
                       isActive
                         ? "bg-primary text-bg shadow-lg shadow-primary/10"
                         : "text-light hover:bg-bg hover:text-white",
@@ -81,7 +120,8 @@ const UserSidebar = () => {
             })}
           </div>
         </nav>
-        {/* Logout */}
+
+        {/* Bottom */}
         <div className="border-t border-border p-4">
           <button
             type="button"
@@ -95,17 +135,17 @@ const UserSidebar = () => {
         </div>
       </aside>
 
-      {/* Logout Confirmation Dialog */}
+      {/* Logout Confirmation */}
       {openDialog && (
         <Dialog
           setOpenDialog={setOpenDialog}
-          title="Logout Confirmation"
-          message="Are you sure you want to log out of the user portal?"
+          message="Are you sure you want to log out of the administration portal?"
           action={handleLogout}
+          title="Logout Confirmation"
         />
       )}
     </>
   );
 };
 
-export default UserSidebar;
+export default AdminSidebar;

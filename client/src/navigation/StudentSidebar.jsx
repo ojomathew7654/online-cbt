@@ -7,7 +7,7 @@ import {
   FaPowerOff,
   FaUserGraduate,
 } from "react-icons/fa";
-import Dialog from "../../components/ui/Dialog";
+import Dialog from "../components/ui/Dialog";
 
 const StudentSidebar = () => {
   const navigate = useNavigate();

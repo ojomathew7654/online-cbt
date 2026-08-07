@@ -1,5 +1,5 @@
 import { Outlet, useLocation } from "react-router-dom";
-import StudentSidebar from "../navigation/student/StudentSidebar";
+import StudentSidebar from "../navigation/StudentSidebar";
 
 const StudentLayout = () => {
   const location = useLocation();

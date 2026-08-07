@@ -4,7 +4,7 @@ import axios from "axios";
 import { FiArrowLeft, FiSave, FiUser, FiLock } from "react-icons/fi";
 import { MdSchool } from "react-icons/md";
 
-import { apiUrl, getError } from "../../../utils";
+import { apiUrl, getError } from "../../utils";
 
 const EditStudent = () => {
   const { studentId = "" } = useParams();

@@ -1,11 +1,11 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
-import { FormInput } from "../../../components/shared/form/FormInput";
+import { FormInput } from "../../components/shared/form/FormInput";
 import axios from "axios";
-import { apiUrl, getError } from "../../../utils";
+import { apiUrl, getError } from "../../utils";
 import { IoIosEyeOff, IoMdEye } from "react-icons/io";
 import { FiArrowLeft, FiLogIn, FiShield } from "react-icons/fi";
-import Spinner from "../../../components/ui/Spinner";
+import Spinner from "../../components/ui/Spinner";
 
 const Login = () => {
   const navigate = useNavigate();
