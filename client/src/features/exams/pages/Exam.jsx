@@ -29,8 +29,6 @@ const Exam = () => {
 
   const [allowStudent, setAllowStudent] = useState(false);
 
-  const hasShuffled = useRef(false);
-
   const schoolId = loggedInStudent?.schoolId;
 
   /*
@@ -146,11 +144,26 @@ const Exam = () => {
 
     try {
       setExamLoading(true);
-      hasShuffled.current = false;
 
       const { data } = await axios.get(`${apiUrl}/api/exams/exam/${examId}`);
 
-      setExam(data);
+      const questions = Array.isArray(data?.questions)
+        ? [...data.questions]
+        : [];
+
+      // Fisher-Yates shuffle
+      for (let i = questions.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+
+        [questions[i], questions[j]] = [questions[j], questions[i]];
+      }
+
+      const shuffledExam = {
+        ...data,
+        questions,
+      };
+
+      setExam(shuffledExam);
       setSubmitted(false);
       setTimeLeft(Number(data?.examDuration || 0));
     } catch (error) {
@@ -224,40 +237,6 @@ const Exam = () => {
       });
     }
   }, [redirectAfterAlert, openAlert, navigate]);
-
-  /*
-   * ---------------------------------------------------------
-   * SHUFFLE QUESTIONS
-   * ---------------------------------------------------------
-   */
-
-  useEffect(() => {
-    if (
-      !exam?.questions ||
-      !Array.isArray(exam.questions) ||
-      hasShuffled.current
-    ) {
-      return;
-    }
-
-    const shuffledQuestions = [...exam.questions];
-
-    for (let i = shuffledQuestions.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-
-      [shuffledQuestions[i], shuffledQuestions[j]] = [
-        shuffledQuestions[j],
-        shuffledQuestions[i],
-      ];
-    }
-
-    setExam((previous) => ({
-      ...previous,
-      questions: shuffledQuestions,
-    }));
-
-    hasShuffled.current = true;
-  }, [exam]);
 
   /*
    * ---------------------------------------------------------

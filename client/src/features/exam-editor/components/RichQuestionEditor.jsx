@@ -1,5 +1,6 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { EditorContent, useEditor } from "@tiptap/react";
+import "mathlive";
 
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -8,14 +9,13 @@ import Subscript from "@tiptap/extension-subscript";
 import Superscript from "@tiptap/extension-superscript";
 import TextAlign from "@tiptap/extension-text-align";
 import Highlight from "@tiptap/extension-highlight";
+
 import {
   Bold,
   Italic,
   Underline as UnderlineIcon,
   List,
   ListOrdered,
-  Sigma,
-  FlaskConical,
   Image as ImageIcon,
   Subscript as SubscriptIcon,
   Superscript as SuperscriptIcon,
@@ -32,9 +32,9 @@ import compressImage from "../extensions/compressImage";
 import ResizableImage from "./ResizableImage";
 import { MathInline } from "../extensions/MathInline";
 
-/**
- * Reusable toolbar button
- */
+import MathFormulaPicker from "./MathFormulaPicker";
+import ChemistryFormulaPicker from "./ChemistryFormulaPicker";
+
 const ToolbarButton = ({
   children,
   title,
@@ -64,10 +64,6 @@ const ToolbarButton = ({
   );
 };
 
-/**
- * Toolbar divider
- */
-
 const ToolbarDivider = () => (
   <div className="mx-1 h-6 w-px shrink-0 bg-border" />
 );
@@ -76,15 +72,35 @@ const RichQuestionEditor = ({
   content = "",
   onChange,
   placeholder = "Type your question here...",
-  /*
-   * Shared Map<pendingId, File> — created once per form (e.g. in
-   * ManualQuestionForm) and passed down to every editor instance
-   * (question + all options) so images picked in any of them can
-   * be uploaded together at "Add Question" time.
-   */
   pendingImagesRef,
 }) => {
   const imageInputRef = useRef(null);
+
+  /*
+   * Mathematics / Physics
+   */
+  const mathButtonRef = useRef(null);
+
+  const [mathSearch, setMathSearch] = useState("");
+  const [mathOpen, setMathOpen] = useState(false);
+
+  const [mathMenuPosition, setMathMenuPosition] = useState({
+    top: 0,
+    left: 0,
+  });
+
+  /*
+   * Chemistry
+   */
+  const chemistryButtonRef = useRef(null);
+
+  const [chemistrySearch, setChemistrySearch] = useState("");
+  const [chemistryOpen, setChemistryOpen] = useState(false);
+
+  const [chemistryMenuPosition, setChemistryMenuPosition] = useState({
+    top: 0,
+    left: 0,
+  });
 
   const editor = useEditor({
     extensions: [
@@ -117,6 +133,7 @@ const RichQuestionEditor = ({
 
       ChemistryInline,
     ],
+
     content,
 
     onUpdate: ({ editor }) => {
@@ -166,6 +183,115 @@ const RichQuestionEditor = ({
     },
   });
 
+  /*
+   * Keep the Mathematics / Physics menu positioned
+   * relative to its toolbar button.
+   */
+  useEffect(() => {
+    if (!mathOpen || !mathButtonRef.current) {
+      return;
+    }
+
+    const updateMathMenuPosition = () => {
+      const buttonRect = mathButtonRef.current.getBoundingClientRect();
+
+      const menuWidth = 360;
+      const menuHeight = 430;
+      const spacing = 8;
+
+      let left = buttonRect.left;
+
+      if (left + menuWidth > window.innerWidth - 16) {
+        left = window.innerWidth - menuWidth - 16;
+      }
+
+      if (left < 16) {
+        left = 16;
+      }
+
+      let top = buttonRect.bottom + spacing;
+
+      if (top + menuHeight > window.innerHeight - 16) {
+        top = buttonRect.top - menuHeight - spacing;
+      }
+
+      if (top < 16) {
+        top = 16;
+      }
+
+      setMathMenuPosition({
+        top,
+        left,
+      });
+    };
+
+    updateMathMenuPosition();
+
+    window.addEventListener("resize", updateMathMenuPosition);
+    window.addEventListener("scroll", updateMathMenuPosition, true);
+
+    return () => {
+      window.removeEventListener("resize", updateMathMenuPosition);
+      window.removeEventListener("scroll", updateMathMenuPosition, true);
+    };
+  }, [mathOpen]);
+
+  /*
+   * Keep the Chemistry menu positioned
+   * relative to its toolbar button.
+   */
+  useEffect(() => {
+    if (!chemistryOpen || !chemistryButtonRef.current) {
+      return;
+    }
+
+    const updateChemistryMenuPosition = () => {
+      const buttonRect = chemistryButtonRef.current.getBoundingClientRect();
+
+      const menuWidth = 340;
+      const menuHeight = 380;
+      const spacing = 8;
+
+      let left = buttonRect.left;
+
+      if (left + menuWidth > window.innerWidth - 16) {
+        left = window.innerWidth - menuWidth - 16;
+      }
+
+      if (left < 16) {
+        left = 16;
+      }
+
+      let top = buttonRect.bottom + spacing;
+
+      if (top + menuHeight > window.innerHeight - 16) {
+        top = buttonRect.top - menuHeight - spacing;
+      }
+
+      if (top < 16) {
+        top = 16;
+      }
+
+      setChemistryMenuPosition({
+        top,
+        left,
+      });
+    };
+
+    updateChemistryMenuPosition();
+
+    window.addEventListener("resize", updateChemistryMenuPosition);
+    window.addEventListener("scroll", updateChemistryMenuPosition, true);
+
+    return () => {
+      window.removeEventListener("resize", updateChemistryMenuPosition);
+      window.removeEventListener("scroll", updateChemistryMenuPosition, true);
+    };
+  }, [chemistryOpen]);
+
+  /*
+   * Keep the editor synchronized with external content changes.
+   */
   useEffect(() => {
     if (!editor) {
       return;
@@ -178,7 +304,7 @@ const RichQuestionEditor = ({
     }
   }, [editor, content]);
 
-  /**
+  /*
    * Tiptap is not ready yet.
    */
   if (!editor) {
@@ -189,20 +315,13 @@ const RichQuestionEditor = ({
     );
   }
 
-  /**
-   * Handle image selection.
-   *
-   * IMPORTANT: this does NOT upload to Cloudinary. It compresses
-   * the image (same non-cropping, proportional-scale approach as
-   * the Profile page), keeps the File in memory (pendingImagesRef),
-   * and inserts a local blob preview into the editor. The actual
-   * upload happens later, only when the teacher clicks
-   * "Add Question" — see resolvePendingImages.js.
+  /*
+   * Image upload
    */
   const handleImageUpload = async (event) => {
     const file = event.target.files?.[0];
 
-    // Reset input so the same image can be selected again
+    // Reset input so the same image can be selected again.
     event.target.value = "";
 
     if (!file) {
@@ -240,28 +359,34 @@ const RichQuestionEditor = ({
     }
   };
 
-  /**
-   * Insert mathematics or physics equation
-   *
-   * Example:
-   * x^2 + y^2 = z^2
-   *
-   * The MathLive field will open through MathInline.
+  /*
+   * Insert a custom mathematics / physics equation.
    */
   const insertEquation = () => {
     editor.chain().focus().insertMath("").run();
+
+    setMathOpen(false);
+    setMathSearch("");
   };
 
-  /**
-   * Insert chemistry formula
-   *
-   * Example:
-   * \ce{H2O}
-   *
-   * The teacher can edit the MathLive field.
+  /*
+   * Insert a predefined mathematics / physics formula.
    */
-  const insertChemistry = () => {
-    editor.chain().focus().insertChemistry("").run();
+  const insertMathFormula = (formula = "") => {
+    editor.chain().focus().insertMath(formula).run();
+
+    setMathOpen(false);
+    setMathSearch("");
+  };
+
+  /*
+   * Insert a predefined or custom chemistry formula.
+   */
+  const insertChemistry = (formula = "") => {
+    editor.chain().focus().insertChemistry(formula).run();
+
+    setChemistryOpen(false);
+    setChemistrySearch("");
   };
 
   return (
@@ -356,23 +481,32 @@ const RichQuestionEditor = ({
             MATHEMATICS / PHYSICS
         ====================================================== */}
 
-        <ToolbarButton
-          title="Insert Mathematics / Physics Equation"
-          onClick={insertEquation}
-        >
-          <Sigma size={18} />
-        </ToolbarButton>
+        <MathFormulaPicker
+          buttonRef={mathButtonRef}
+          open={mathOpen}
+          setOpen={setMathOpen}
+          setOtherOpen={setChemistryOpen}
+          search={mathSearch}
+          setSearch={setMathSearch}
+          menuPosition={mathMenuPosition}
+          onInsertFormula={insertMathFormula}
+          onInsertCustom={insertEquation}
+        />
 
         {/* =====================================================
             CHEMISTRY
         ====================================================== */}
 
-        <ToolbarButton
-          title="Insert Chemistry Formula"
-          onClick={insertChemistry}
-        >
-          <FlaskConical size={18} />
-        </ToolbarButton>
+        <ChemistryFormulaPicker
+          buttonRef={chemistryButtonRef}
+          open={chemistryOpen}
+          setOpen={setChemistryOpen}
+          setOtherOpen={setMathOpen}
+          search={chemistrySearch}
+          setSearch={setChemistrySearch}
+          menuPosition={chemistryMenuPosition}
+          onInsertFormula={insertChemistry}
+        />
 
         {/* =====================================================
             IMAGE UPLOAD
