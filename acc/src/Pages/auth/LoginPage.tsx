@@ -27,7 +27,7 @@ export default function LoginPage() {
   const apiUrl =
     import.meta.env.MODE == "development"
       ? "http://localhost:5000/api/users"
-      : "https://cbt-api-rho.vercel.app/api/users";
+      : "https://cbt-api.ascodeelevate.com/api/users";
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
