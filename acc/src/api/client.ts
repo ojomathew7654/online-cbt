@@ -25,7 +25,6 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (res) => res,
   (err) => {
-    console.log(err.response?.status);
     if (err.response?.status === 401) {
       localStorage.removeItem("accountingAuth");
       localStorage.setItem("authRedirectReason", "session_expired");

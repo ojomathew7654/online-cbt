@@ -44,9 +44,6 @@ const ManualQuestionForm = ({
     if (!initialQuestion) {
       return;
     }
-
-    console.log("Prefilling question form:", initialQuestion);
-
     setQuestion(initialQuestion.question || "");
 
     setOptions(

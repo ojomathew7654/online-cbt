@@ -33,9 +33,6 @@ const EditQuestion = () => {
         const { data } = await axios.get(
           `${apiUrl}/api/exams/question/${questionId}`,
         );
-
-        console.log("Question being edited:", data);
-
         setQuestion(data);
       } catch (error) {
         console.error("Error fetching question:", error);
@@ -58,7 +55,7 @@ const EditQuestion = () => {
       </section>
     );
   }
-  console.log(question);
+
   return (
     <section className="min-h-screen bg-bg px-4 py-6 text-white sm:px-6 lg:px-8">
       {openAlert && (

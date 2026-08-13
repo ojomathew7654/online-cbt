@@ -174,9 +174,6 @@ const ExamQuestion = ({
         `${apiUrl}/api/students/create-answer`,
         studentQuestionsAndAnswers,
       );
-
-      console.log(data);
-
       // 3. Calculate score
       const score = calculateScore();
 

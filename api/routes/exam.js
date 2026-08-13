@@ -521,9 +521,7 @@ const streamUpload = (buffer) => {
         resource_type: "image",
       },
       (error, result) => {
-        console.log("Cloudinary callback:");
         console.log("Error:", error);
-        console.log("Result:", result);
 
         if (error) {
           reject(error);

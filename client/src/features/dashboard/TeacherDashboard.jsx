@@ -49,8 +49,6 @@ const TeacherDashboard = () => {
         `${apiUrl}/api/user-exams/my-exams/${userId}`,
       );
 
-      console.log("My assigned exams:", data);
-
       setExams(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Failed to fetch assigned exams:", err);
