@@ -15,6 +15,7 @@ const ChemistryFormulaPicker = ({
   onInsertFormula,
 }) => {
   const chemistryButtonRef = useRef(null);
+  const chemistryPickerRef = useRef(null);
 
   /*
    * Keep the internally created button ref synchronized
@@ -37,6 +38,39 @@ const ChemistryFormulaPicker = ({
     setOpen(false);
     setSearch("");
   };
+
+  /*
+   * Close the chemistry picker when clicking outside.
+   *
+   * The trigger button is excluded so clicking the Chemistry
+   * button itself does not immediately trigger the outside
+   * click handler.
+   */
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const handleClickOutside = (event) => {
+      const picker = chemistryPickerRef.current;
+      const button = chemistryButtonRef.current;
+
+      if (
+        picker &&
+        !picker.contains(event.target) &&
+        button &&
+        !button.contains(event.target)
+      ) {
+        closeChemistry();
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [open]);
 
   const handleChemistryToggle = () => {
     const nextOpen = !open;
@@ -101,6 +135,7 @@ const ChemistryFormulaPicker = ({
       {open &&
         createPortal(
           <div
+            ref={chemistryPickerRef}
             className="
               fixed z-[99999]
               w-[340px] max-w-[calc(100vw-2rem)]
