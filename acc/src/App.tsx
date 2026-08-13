@@ -1,27 +1,27 @@
 import { Routes, Route } from "react-router-dom";
 // Import REAL pages
-import SessionsPage from "./pages/admin/SessionsPage";
-import AccountsPage from "./pages/admin/AccountsPage";
-import JournalPage from "./pages/admin/JournalPage";
-import FeesPage from "./pages/admin/FeesPage";
-import PaymentsPage from "./pages/admin/PaymentsPage";
-import ExpensesPage from "./pages/admin/ExpensesPage";
-import LoansPage from "./pages/admin/LoansPage";
-import DonationsPage from "./pages/admin/DonationsPage";
-import ReportsPage from "./pages/admin/ReportsPage";
-import AuditPage from "./pages/admin/AuditPage";
+import SessionsPage from "./Pages/admin/SessionsPage";
+import AccountsPage from "./Pages/admin/AccountsPage";
+import JournalPage from "./Pages/admin/JournalPage";
+import FeesPage from "./Pages/admin/FeesPage";
+import PaymentsPage from "./Pages/admin/PaymentsPage";
+import ExpensesPage from "./Pages/admin/ExpensesPage";
+import LoansPage from "./Pages/admin/LoansPage";
+import DonationsPage from "./Pages/admin/DonationsPage";
+import ReportsPage from "./Pages/admin/ReportsPage";
+import AuditPage from "./Pages/admin/AuditPage";
 
 // Optional (if you're using context)
 import { AppProvider } from "./context/AppContext";
 
-import LoginPage from "./pages/auth/LoginPage";
+import LoginPage from "./Pages/auth/LoginPage";
 import { ToastProvider } from "./context/ToastContext";
-import StudentsPage from "./pages/admin/StudentsPage";
+import StudentsPage from "./Pages/admin/StudentsPage";
 import Layout from "./components/layouts/Layout";
-import DashboardPage from "./pages/admin/DashboardPage";
-import SuperAdminPage from "./pages/superadmin/SuperAdminPage";
-import OtherTransactionsPage from "./pages/admin/OtherTransactionsPage";
-import SuperAdminUsersPage from "./pages/superadmin/SuperAdminUsersPage";
+import DashboardPage from "./Pages/admin/DashboardPage";
+import SuperAdminPage from "./Pages/superadmin/SuperAdminPage";
+import OtherTransactionsPage from "./Pages/admin/OtherTransactionsPage";
+import SuperAdminUsersPage from "./Pages/superadmin/SuperAdminUsersPage";
 
 export default function App() {
   return (
