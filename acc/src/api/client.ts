@@ -3,7 +3,7 @@ import axios from "axios";
 const apiUrl =
   import.meta.env.MODE == "development"
     ? "http://localhost:5000/api/accounting"
-    : "https://cbt-api-rho.vercel.app/api/accounting";
+    : "https://cbt-api.ascodeelevate.com/api/accounting";
 
 const api = axios.create({
   baseURL: apiUrl || "http://localhost:5000/api/accounting",

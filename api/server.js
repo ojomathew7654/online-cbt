@@ -95,7 +95,7 @@ app.use("/api/user-exams", userExamRoute);
 // ✅ Accounting routes
 app.use("/api/accounting", accountingRouter);
 
-app.get("/", (req, res) => res.send("welcome to blog app"));
+app.get("/", (req, res) => res.send("welcome to AS Code elevate CBT API"));
 
 app.use((err, req, res, next) => {
   res.status(500).send({ message: `${err.message}` });
