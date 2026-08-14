@@ -12,7 +12,6 @@ import AddSingleQue from "./features/exam-editor/pages/AddSingleQue";
 import EditQuestion from "./features/exam-editor/pages/EditQuestion";
 import EditStudent from "./features/AdminPages/EditSudent";
 import StudentScore from "./features/AdminPages/StudentScore";
-// import Admin from "./features/settings/AdminSettings";
 import UserLayout from "./layouts/UserLayout";
 import StudentLayout from "./layouts/StudentLayout";
 import StudentDashboard from "./features/dashboard/StudentDashboard";

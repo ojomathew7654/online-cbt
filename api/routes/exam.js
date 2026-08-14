@@ -109,7 +109,7 @@ examRoute.get(
         include: {
           Subject: {
             select: {
-              name: true, // Fetch only the subject name
+              name: true,
             },
           },
         },
@@ -121,9 +121,11 @@ examRoute.get(
         termType: exam.termType,
         visible: exam.visible,
         examDuration: exam.examDuration,
+        shuffleQuestions: exam.shuffleQuestions,
         subjectId: exam.subjectId,
         subjectName: exam.Subject?.name || "Unknown",
       }));
+
       res.status(200).json(formattedExams);
     } catch (err) {
       res
@@ -200,9 +202,9 @@ examRoute.get(
   }),
 );
 
-//update-visibility
+// Update exam settings
 examRoute.put(
-  "/update-visibility-duration",
+  "/update-exam-settings",
   expressAsyncHandler(async (req, res) => {
     try {
       const { updates } = req.body;
@@ -219,32 +221,37 @@ examRoute.put(
         if (
           !update.id ||
           typeof update.visible !== "boolean" ||
-          typeof update.examDuration !== "number"
+          typeof update.examDuration !== "number" ||
+          typeof update.shuffleQuestions !== "boolean"
         ) {
           return res.status(400).json({
             message:
-              "Each update must include 'id', 'visible', and 'examDuration'.",
+              "Each update must include 'id', 'visible', 'examDuration', and 'shuffleQuestions'.",
           });
         }
       }
 
-      // Perform updates in a transaction
+      // Update exams
       const updatePromises = updates.map((update) =>
         prisma.exam.update({
           where: { id: update.id },
           data: {
             visible: update.visible,
             examDuration: update.examDuration,
+            shuffleQuestions: update.shuffleQuestions,
           },
         }),
       );
 
       await Promise.all(updatePromises);
+
       res.status(200).json({
-        message: "Exam visibility and durations updated successfully.",
+        message: "Exam settings updated successfully.",
       });
     } catch (err) {
-      res.status(500).json({ message: err.message });
+      res.status(500).json({
+        message: err.message,
+      });
     }
   }),
 );
@@ -255,12 +262,14 @@ examRoute.get(
   expressAsyncHandler(async (req, res) => {
     try {
       const { id } = req.params;
+
       // Validate exam ID
       if (!id) {
         return res.status(400).json({
           message: "Exam ID is required to fetch the exam.",
         });
       }
+
       // Fetch the exam with questions and subject name
       const exam = await prisma.exam.findUnique({
         where: {
@@ -269,12 +278,13 @@ examRoute.get(
         include: {
           Subject: {
             select: {
-              name: true, // Include the subject name
+              name: true,
             },
           },
-          questions: true, // Include all questions
+          questions: true,
         },
       });
+
       if (!exam) {
         return res.status(404).json({
           message: "Exam not found.",
@@ -288,6 +298,7 @@ examRoute.get(
         termType: exam.termType,
         visible: exam.visible,
         examDuration: exam.examDuration,
+        shuffleQuestions: exam.shuffleQuestions,
         subjectName: exam.Subject?.name || "Unknown",
         questions: exam.questions.map((question) => ({
           id: question.id,
@@ -296,6 +307,7 @@ examRoute.get(
           correctAnswer: question.correctAnswer,
         })),
       };
+
       res.status(200).json(formattedExam);
     } catch (err) {
       res.status(500).json({

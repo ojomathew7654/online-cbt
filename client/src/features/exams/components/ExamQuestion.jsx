@@ -33,12 +33,7 @@ const ExamQuestion = ({
 
   const currentQuestion = questions[currentQuestionIndex];
 
-  /*
-   * ---------------------------------------------------------
-   * RESET WHEN EXAM CHANGES
-   * ---------------------------------------------------------
-   */
-
+  //  * RESET WHEN EXAM CHANGES
   useEffect(() => {
     setCurrentQuestionIndex(0);
     setAnswers({});
@@ -405,59 +400,61 @@ const ExamQuestion = ({
           </div>
 
           {/* Options */}
-          <div className="mt-4 space-y-2">
+          <div className="mt-4 space-y-3">
             {currentQuestion.options?.map((option, index) => {
               const isSelected = answers[currentQuestion.id] === index;
-
               const letter = String.fromCharCode(65 + index);
 
               return (
                 <label
                   key={`${currentQuestion.id}-${index}`}
                   className="
-                    flex
-                    cursor-pointer
-                    items-start
-                    gap-3
-                    text-base
-                    text-white
-                    sm:text-lg
-                  "
+          grid
+          cursor-pointer
+          grid-cols-[20px_32px_minmax(0,1fr)]
+          items-start
+          gap-2
+          text-base
+          text-white
+          sm:text-lg
+        "
                 >
+                  {/* Radio */}
                   <input
                     type="radio"
                     name={`question-${currentQuestion.id}`}
                     checked={isSelected}
                     onChange={() => handleAnswer(index)}
                     className="
-                      mt-1
-                      h-5
-                      w-5
-                      cursor-pointer
-                      accent-primary
-                    "
+            mt-1
+            h-5
+            w-5
+            shrink-0
+            cursor-pointer
+            accent-primary
+          "
                   />
 
-                  <span className="min-w-0">
-                    <span className="mr-1">({letter})</span>
+                  {/* Option letter */}
+                  <span className="pt-0.5 leading-6">({letter})</span>
 
-                    <RichContentRenderer
-                      content={option}
-                      className="
-                        inline
-                        text-base
-                        text-white
-                        sm:text-lg
-                        [&_p]:m-0
-                        [&_p]:inline
-                      "
-                    />
-                  </span>
+                  {/* Option content */}
+                  <RichContentRenderer
+                    content={option}
+                    className="
+            min-w-0
+            text-base
+            leading-6
+            text-white
+            sm:text-lg
+            [&_p]:m-0
+            [&_p]:leading-6
+          "
+                  />
                 </label>
               );
             })}
           </div>
-
           {/* =================================================
               PREVIOUS / NEXT
           ================================================== */}

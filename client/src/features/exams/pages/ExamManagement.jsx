@@ -40,6 +40,7 @@ const ExamManagement = () => {
 
   const [visibilityChanges, setVisibilityChanges] = useState({});
   const [durationChanges, setDurationChanges] = useState({});
+  const [shuffleChanges, setShuffleChanges] = useState({});
 
   /*
    * =========================================================
@@ -120,6 +121,13 @@ const ExamManagement = () => {
     }));
   };
 
+  const handleShuffleChange = (examId) => {
+    setShuffleChanges((previous) => ({
+      ...previous,
+      [examId]: !previous[examId],
+    }));
+  };
+
   /*
    * =========================================================
    * DURATION CHANGE
@@ -157,21 +165,22 @@ const ExamManagement = () => {
           },
         },
       );
-
+      console.log(data);
       const exams = Array.isArray(data) ? data : [];
-
       setExam(exams);
-
       /*
        * Initialize visibility state
        */
       const initialVisibility = {};
+      const initialShuffle = {};
 
       exams.forEach((ex) => {
         initialVisibility[ex.id] = Boolean(ex.visible);
+        initialShuffle[ex.id] = Boolean(ex.shuffleQuestions);
       });
 
       setVisibilityChanges(initialVisibility);
+      setShuffleChanges(initialShuffle);
     } catch (error) {
       console.error("Failed to fetch examinations:", error);
 
@@ -180,18 +189,11 @@ const ExamManagement = () => {
       setLoading(false);
     }
   };
-
-  /*
-   * =========================================================
-   * TERM CHANGE
-   * =========================================================
-   */
+  console.log(exam);
 
   const handleTermChange = async (event) => {
     const term = event.target.value;
-
     setSelectedTerm(term);
-
     await fetchExam(term, selectedLevel);
   };
 
@@ -333,9 +335,10 @@ const ExamManagement = () => {
         id,
         visible: Boolean(visibilityChanges[id]),
         examDuration: durationChanges[id],
+        shuffleQuestions: Boolean(shuffleChanges[id]),
       }));
 
-      await axios.put(`${apiUrl}/api/exams/update-visibility-duration`, {
+      await axios.put(`${apiUrl}/api/exams/update-exam-settings`, {
         updates,
       });
 
@@ -477,7 +480,7 @@ const ExamManagement = () => {
 
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-light">
                   Create subjects, configure examinations, manage visibility,
-                  and control examination duration.
+                  duration, and question order.
                 </p>
               </div>
             </div>
@@ -719,7 +722,8 @@ const ExamManagement = () => {
                 </h2>
 
                 <p className="mt-1 text-sm text-light">
-                  Manage visibility and duration for available examinations.
+                  Manage visibility, duration, and question order for available
+                  examinations.
                 </p>
               </div>
 
@@ -765,6 +769,9 @@ const ExamManagement = () => {
 
                       <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-light">
                         Visibility
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-light">
+                        Question Order
                       </th>
 
                       <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-light">
@@ -838,6 +845,42 @@ const ExamManagement = () => {
                                   Hidden
                                 </>
                               )}
+                            </span>
+                          </div>
+                        </td>
+
+                        {/* QUESTION ORDER */}
+
+                        <td className="px-6 py-5">
+                          <div className="inline-flex items-center gap-3">
+                            <button
+                              type="button"
+                              role="switch"
+                              aria-checked={Boolean(shuffleChanges[ex.id])}
+                              aria-label={`Toggle question shuffling for ${ex.subjectName}`}
+                              onClick={() => handleShuffleChange(ex.id)}
+                              className="group inline-flex items-center focus:outline-none"
+                            >
+                              <span
+                                className={`
+          relative h-6 w-11 rounded-full transition-colors duration-200
+          ${shuffleChanges[ex.id] ? "bg-primary" : "bg-white/10"}
+        `}
+                              >
+                                <span
+                                  className={`
+            absolute left-1 top-1 h-4 w-4 rounded-full bg-white
+            transition-transform duration-200
+            ${shuffleChanges[ex.id] ? "translate-x-5" : "translate-x-0"}
+          `}
+                                />
+                              </span>
+                            </button>
+
+                            <span className="text-sm text-light">
+                              {shuffleChanges[ex.id]
+                                ? "Randomized"
+                                : "Original order"}
                             </span>
                           </div>
                         </td>
@@ -924,7 +967,6 @@ const ExamManagement = () => {
 
                     <div className="grid gap-4 sm:grid-cols-2">
                       {/* VISIBILITY */}
-
                       <div className="rounded-xl border border-border bg-white/[0.02] p-4">
                         <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-light">
                           Visibility
@@ -949,9 +991,33 @@ const ExamManagement = () => {
                           </span>
                         </label>
                       </div>
+                      {/* QUESTION ORDER */}
 
+                      <div className="rounded-xl border border-border bg-white/[0.02] p-4">
+                        <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-light">
+                          Question Order
+                        </p>
+
+                        <label className="inline-flex cursor-pointer items-center gap-3">
+                          <input
+                            type="checkbox"
+                            checked={Boolean(shuffleChanges[ex.id])}
+                            onChange={() => handleShuffleChange(ex.id)}
+                            className="peer sr-only"
+                          />
+
+                          <span className="relative h-6 w-11 rounded-full bg-white/10 transition peer-checked:bg-primary">
+                            <span className="absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition peer-checked:translate-x-5" />
+                          </span>
+
+                          <span className="text-sm text-light">
+                            {shuffleChanges[ex.id]
+                              ? "Questions are randomized"
+                              : "Original question order"}
+                          </span>
+                        </label>
+                      </div>
                       {/* DURATION */}
-
                       <div className="rounded-xl border border-border bg-white/[0.02] p-4">
                         <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-light">
                           Exam Duration

@@ -7,9 +7,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ─────────────────────────────────────────────
 // EXISTING MODELS (unchanged)
-// ─────────────────────────────────────────────
 
 model School {
   id              String   @id @default(auto()) @map("_id") @db.ObjectId
@@ -104,19 +102,20 @@ model Subject {
 }
 
 model Exam {
-  id           String     @id @default(auto()) @map("_id") @db.ObjectId
-  visible      Boolean
-  examDuration Int
-  questions    Question[]
-  termType     TermType
-  level        String
-  subjectId    String     @db.ObjectId
-  Subject      Subject    @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-  schoolId     String     @db.ObjectId
-  School       School     @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  answers      Answer[]   @relation("ExamToAnswers")
+  id               String     @id @default(auto()) @map("_id") @db.ObjectId
+  visible          Boolean
+  examDuration     Int
+  shuffleQuestions Boolean    @default(true)
+  questions        Question[]
+  termType         TermType
+  level            String
+  subjectId        String     @db.ObjectId
+  Subject          Subject    @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  schoolId         String     @db.ObjectId
+  School           School     @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  answers          Answer[]   @relation("ExamToAnswers")
   // Teachers/users assigned to this exam
-  userExams    UserExam[]
+  userExams        UserExam[]
 }
 
 model Question {

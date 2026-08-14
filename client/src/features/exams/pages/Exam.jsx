@@ -26,17 +26,11 @@ const Exam = () => {
 
   const [alertMessage, setAlertMessage] = useState("");
   const [redirectAfterAlert, setRedirectAfterAlert] = useState(false);
-
   const [allowStudent, setAllowStudent] = useState(false);
 
   const schoolId = loggedInStudent?.schoolId;
 
-  /*
-   * ---------------------------------------------------------
-   * EXAM TIMER
-   * ---------------------------------------------------------
-   */
-
+  // * EXAM TIMER
   useEffect(() => {
     if (!exam?.id || submitted || timeLeft <= 0) {
       return;
@@ -56,12 +50,7 @@ const Exam = () => {
     return () => clearInterval(timer);
   }, [exam?.id, submitted, timeLeft]);
 
-  /*
-   * ---------------------------------------------------------
-   * LOAD LOGGED-IN STUDENT
-   * ---------------------------------------------------------
-   */
-
+  // * LOAD LOGGED-IN STUDENT
   useEffect(() => {
     try {
       const storedUser = localStorage.getItem("loggedInStudent");
@@ -95,11 +84,7 @@ const Exam = () => {
     }
   }, [navigate]);
 
-  /*
-   * ---------------------------------------------------------
-   * CHECK SCHOOL SETTINGS
-   * ---------------------------------------------------------
-   */
+  // CHECK SCHOOL SETTINGS
 
   useEffect(() => {
     if (!schoolId) {
@@ -121,20 +106,6 @@ const Exam = () => {
     fetchSchool();
   }, [schoolId]);
 
-  /*
-   * ---------------------------------------------------------
-   * LOAD SELECTED EXAM
-   *
-   * The exam ID now comes directly from:
-   *
-   * /selected-exam/:examId
-   *
-   * Example:
-   *
-   * /selected-exam/6a01ab71ad786865c80780c3
-   * ---------------------------------------------------------
-   */
-
   const fetchSelectedExam = useCallback(async () => {
     if (!examId) {
       setExamLoading(false);
@@ -151,19 +122,21 @@ const Exam = () => {
         ? [...data.questions]
         : [];
 
-      // Fisher-Yates shuffle
-      for (let i = questions.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
+      // Shuffle questions only when enabled for this exam
+      if (data?.shuffleQuestions) {
+        for (let i = questions.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
 
-        [questions[i], questions[j]] = [questions[j], questions[i]];
+          [questions[i], questions[j]] = [questions[j], questions[i]];
+        }
       }
 
-      const shuffledExam = {
+      const formattedExam = {
         ...data,
         questions,
       };
 
-      setExam(shuffledExam);
+      setExam(formattedExam);
       setSubmitted(false);
       setTimeLeft(Number(data?.examDuration || 0));
     } catch (error) {
