@@ -28,8 +28,12 @@ const Home = () => {
         <header className="relative z-10 border-b border-white/10">
           <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-5 lg:px-8">
             <Link to="/" className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary text-bg">
-                <FaGraduationCap className="text-xl" />
+              <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl">
+                <img
+                  src="/logo.png"
+                  alt="As Code Elevate"
+                  className="h-full w-full object-contain"
+                />
               </div>
 
               <div>
